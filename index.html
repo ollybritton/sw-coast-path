@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SW Coast Path</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"
+    integrity="sha512-xodZBNTC5n17Xt2atTPuE1HxjVMSvLVW9ocqUKLsCC5CXdbqCmblAshOMAS6/keqq/sMZMZ19scR4PsZChSR7A=="
+    crossorigin="" />
+  <link rel="stylesheet" href="https://unpkg.com/tachyons@4.12.0/css/tachyons.min.css" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+
+<body class="baskerville">
+  <div id="map"></div>
+  <div id="intro" class="pa3 panel">
+    <h1 class="fw1">🗺️ SW Coast Path</h1>
+    <p>
+      This website shows our progress around the <i>South West Coast Path</i> (SWCP), a
+      roughly 630 mile walking
+      route that stretches from Minehead in Exmoor to Sandbanks in Dorset. Click on a section to see its associated
+      info, and check out the <a href="https://www.youtube.com/@candovlogs">YouTube channel</a> for more updates.
+    </p>
+    <h3>The Walkers</h3>
+    <img class="profile profile-charlie" src="images/charlie.jpg" />
+    <img class="profile profile-olly" src="images/olly.jpg" />
+    <img class="profile profile-dad" src="images/dad.jpg" />
+  </div>
+
+  <div id="info" class="pa3 panel" hidden>
+    <h1 id="info-route" class="fw1">Minehead to Porlock Weir</h1>
+    <h5 id="info-date" class="ma0 mb2 fw1">⏰ June 16th - June 17th</h5>
+    <img class="profile profile-charlie" id="profile-charlie" src="images/charlie.jpg" />
+    <img class="profile profile-olly" id="profile-olly" src="images/olly.jpg" />
+    <img class="profile profile-dad" id="profile-dad" src="images/dad.jpg" />
+    <p class="ma0 mt1">
+      <a target="_blank" id="info-link" href="#">Watch the video!</a>
+      <span id="info-no-link" hidden>Video in the works...</span>
+    </p>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"
+    integrity="sha512-XQoYMqMTK8LvdxXYG3nZ448hOEQiglfqkJs1NOQV44cWnUrBc8PkAOcXy20w0vlaXaVUearIOBhiXZ5V3ynxwA=="
+    crossorigin=""></script>
+  <script src="data.js"></script>
+  <script src="scripts.js"></script>
+</body>
+
+</html>

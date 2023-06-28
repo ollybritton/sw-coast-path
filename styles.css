@@ -1,0 +1,55 @@
+:root {
+  --color-olly: blue;
+  --color-charlie: red;
+  --color-dad: green;
+}
+
+body {
+  margin: 0;
+}
+
+#map {
+  height: 75svh;
+  width: 100%;
+  box-shadow: 0 5px 20px -2px #ddd;
+}
+
+.panel {
+  height: 25svh;
+  width: 100%;
+  overflow-y: scroll;
+}
+
+@media (min-width:320px) {
+  .panel {
+    height: 32svh;
+  }
+
+  #map {
+    height: 68svh;
+  }
+}
+
+h1 {
+  margin: 0 !important
+}
+
+.profile {
+  max-height: 10vh;
+}
+
+.profile-charlie {
+  border: var(--color-charlie) 3px solid;
+}
+
+.profile-olly {
+  border: var(--color-olly) 3px solid;
+}
+
+.profile-dad {
+  border: var(--color-dad) 3px solid;
+}
+
+#info-no-link {
+  opacity: 0.5;
+}
