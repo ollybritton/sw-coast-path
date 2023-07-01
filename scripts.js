@@ -98,7 +98,7 @@ HIKE_DATA.forEach((data) => {
 
   if (data.fixEnd) {
     const endMarker = L.marker(data.endCoords, {
-      title: `${data.start}`,
+      title: `${data.end}`,
       icon: L.icon({
         iconUrl: MARKER_ICON_URL,
         shadowUrl: MARKER_SHADOW_URL,
@@ -109,7 +109,7 @@ HIKE_DATA.forEach((data) => {
       }),
     }).addTo(map);
 
-    endMarker.bindPopup(`${data.start}`);
+    endMarker.bindPopup(`${data.end}`);
     endMarker.on("click", (e) => {
       endMarker.openPopup();
       updateInfoPanel(data);
