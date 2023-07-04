@@ -11,6 +11,7 @@ const COLORS = {
 };
 
 const HIKE_DATA = [
+  // Starting anticlockwise
   {
     start: "Minehead",
     end: "Porlock Weir",
@@ -89,8 +90,24 @@ const HIKE_DATA = [
     videoLink: "",
     fixEnd: true,
   },
+  // Ending anticlockwise directions
 
-  // Begin other direction
+  // Starting middle section
+  {
+    start: "Trevaunance Cove",
+    end: "Portreath",
+    direction: null,
+    startCoords: [50.3203, -5.204],
+    endCoords: [50.2593581, -5.3283395],
+    charlie: false,
+    olly: false,
+    dad: true,
+    videoLink: "",
+    fixEnd: true,
+  },
+  // Ending middle section
+
+  // Starting clockwise direction
   {
     start: "Exmouth",
     end: "Teigenmouth",
@@ -269,4 +286,5 @@ const HIKE_DATA = [
     videoLink: "",
     fixEnd: true,
   },
+  // Ending anticlockwise direction
 ];
