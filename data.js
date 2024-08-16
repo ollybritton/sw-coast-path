@@ -92,13 +92,102 @@ const HIKE_DATA = [
   },
   // Ending anticlockwise directions
 
+  // Starting Charlie and Dad Padstow bit
+  {
+    start: "Rock",
+    end: "Pentireglaze Lead Mines",
+    direction: "N",
+    startCoords: [50.54139, -4.909670],
+    endCoords: [50.581758, -4.905161],
+    charlie: true,
+    dad: true,
+    olly: false,
+    videoLink: "",
+    fixEnd: true
+  },
+  {
+    start: "Harlyn Bay",
+    end: "Padstow",
+    direction: "N",
+    startCoords: [50.53947, -4.993452],
+    endCoords: [50.538812, -4.936418],
+    charlie: true,
+    dad: true,
+    olly: false,
+    videoLink: "https://youtu.be/jGyB_yDCq4o",
+    fixEnd: true
+  },
+  {
+    start: "Porthcothan",
+    end: "Harlyn Bay",
+    direction: "N",
+    startCoords: [50.508091, -5.021389],
+    endCoords: [50.53947, -4.993452],
+    charlie: true,
+    dad: true,
+    olly: false,
+    videoLink: "https://youtu.be/y5YhAAPxWMM",
+  },
+  
+  // TODO fix this positioning as can't view the Watergate Bay to Porthcothan
+  // card or view if this is added afterwards
+  {
+    start: "Watergate Bay",
+    end: "Newquay",
+    direction: "S",
+    startCoords: [50.444544, -5.040023],
+    endCoords: [50.415142, -5.076412],
+    charlie: true,
+    dad: true,
+    olly: true,
+    videoLink: "",
+  },
+  {
+    start: "Watergate Bay",
+    end: "Porthcothan",
+    direction: "N",
+    startCoords: [50.444544, -5.040023],
+    endCoords: [50.508091, -5.021389],
+    charlie: true,
+    dad: true,
+    olly: false,
+    videoLink: "https://youtu.be/x4pgyRBNXpo",
+  },
+  // Ending Charlie and Dad Padstow bit
+
+  // Starting Newquay week in hotel
+  {
+    start: "Holywell",
+    end: "Newquay",
+    direction: "N",
+    startCoords: [50.385772, -5.142560],
+    endCoords: [50.415142, -5.076412],
+    charlie: true,
+    dad: true,
+    olly: true,
+    videoLink: "",
+    fixEnd: true
+  },
+  {
+    start: "Holywell",
+    end: "Trevaunance Cove",
+    direction: "S",
+    startCoords: [50.385772, -5.142560],
+    endCoords: [50.319018, -5.202245],
+    charlie: true,
+    dad: true,
+    olly: true,
+    videoLink: "",
+  },
+  // Ending Newquay week in hotel
+
   // Starting middle section
   {
     start: "Trevaunance Cove",
     end: "Portreath",
-    direction: null,
-    startCoords: [50.3203, -5.204],
-    endCoords: [50.2593581, -5.3283395],
+    direction: "N",
+    startCoords: [50.319018, -5.202245],
+    endCoords: [50.260853, -5.292442],
     charlie: false,
     olly: false,
     dad: true,
@@ -162,7 +251,7 @@ const HIKE_DATA = [
     charlie: true,
     olly: true,
     dad: true,
-    videoLink: "",
+    videoLink: "https://youtu.be/vB_wt8IAkLQ",
   },
   {
     start: "Lyme Regis",
@@ -173,7 +262,7 @@ const HIKE_DATA = [
     charlie: true,
     olly: true,
     dad: true,
-    videoLink: "",
+    videoLink: "https://youtu.be/vB_wt8IAkLQ",
   },
   {
     start: "West Bay",
@@ -272,18 +361,18 @@ const HIKE_DATA = [
     charlie: true,
     olly: false,
     dad: true,
-    videoLink: "",
+    videoLink: "https://youtu.be/BkH-Z1v7gkM",
   },
   {
-    start: "Swanage",
-    end: "Shell Bay",
-    direction: "N",
-    startCoords: [50.6083, -1.9608],
-    endCoords: [50.6773, -1.9466],
+    start: "Shell Bay",
+    end: "Swanage",
+    direction: "S",
+    startCoords: [50.6773, -1.9466],
+    endCoords: [50.6083, -1.9608],
     charlie: true,
     olly: false,
     dad: true,
-    videoLink: "",
+    videoLink: "https://youtu.be/pssL93hjxH0",
     fixEnd: true,
   },
   // Ending anticlockwise direction
