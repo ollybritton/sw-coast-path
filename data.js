@@ -102,7 +102,7 @@ const HIKE_DATA = [
     charlie: true,
     dad: true,
     olly: false,
-    videoLink: "",
+    videoLink: "https://youtu.be/210oNvf5OMc",
     fixEnd: true
   },
   {
@@ -128,7 +128,7 @@ const HIKE_DATA = [
     olly: false,
     videoLink: "https://youtu.be/y5YhAAPxWMM",
   },
-  
+
   // TODO fix this positioning as can't view the Watergate Bay to Porthcothan
   // card or view if this is added afterwards
   {
