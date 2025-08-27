@@ -198,6 +198,19 @@ const HIKE_DATA = [
 
   // Starting clockwise direction
   {
+    start: "Teigenmouth",
+    end: "Torquay",
+    direction: "S",
+    startCoords: [50.5403, -3.5036],
+    endCoords: [50.4602, -3.5405],
+    charlie: true,
+    olly: true,
+    dad: true,
+    videoLink: "",
+    fixEnd: true,
+    date: "2025-08-26",
+  },
+  {
     start: "Exmouth",
     end: "Teigenmouth",
     direction: "N",
@@ -207,7 +220,6 @@ const HIKE_DATA = [
     olly: true,
     dad: true,
     videoLink: "",
-    fixEnd: true,
   },
   {
     start: "Budleigh Salterton",
