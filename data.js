@@ -11,7 +11,7 @@ const COLORS = {
 };
 
 const HIKE_DATA = [
-  // Starting anticlockwise
+  // First trip out in 2021
   {
     start: "Minehead",
     end: "Porlock Weir",
@@ -22,6 +22,7 @@ const HIKE_DATA = [
     olly: true,
     dad: true,
     videoLink: "https://www.youtube.com/watch?v=bePFuryxKWk",
+    date: "2021-08-22",
   },
   {
     start: "Porlock Weir",
@@ -33,6 +34,7 @@ const HIKE_DATA = [
     olly: true,
     dad: true,
     videoLink: "https://www.youtube.com/watch?v=LeV3sTSMqbw",
+    date: "2021-08-23",
   },
   {
     start: "Lynmouth",
@@ -44,6 +46,7 @@ const HIKE_DATA = [
     olly: true,
     dad: true,
     videoLink: "https://www.youtube.com/watch?v=3lI0qnjOysM",
+    date: "2021-08-24",
   },
   {
     start: "Coombe Martin",
@@ -55,6 +58,7 @@ const HIKE_DATA = [
     olly: true,
     dad: true,
     videoLink: "https://www.youtube.com/watch?v=VPTrw9T-YeQ",
+    date: "2021-08-26",
   },
   {
     start: "Mortehoe",
@@ -66,7 +70,10 @@ const HIKE_DATA = [
     olly: true,
     dad: true,
     videoLink: "https://www.youtube.com/watch?v=eb7Jj3PwDmA",
+    date: "2021-08-27",
   },
+
+  // Small section Dad and Olly did
   {
     start: "Croyde",
     end: "Braunton",
@@ -97,13 +104,13 @@ const HIKE_DATA = [
     start: "Rock",
     end: "Pentireglaze Lead Mines",
     direction: "N",
-    startCoords: [50.54139, -4.909670],
+    startCoords: [50.54139, -4.90967],
     endCoords: [50.581758, -4.905161],
     charlie: true,
     dad: true,
     olly: false,
     videoLink: "https://youtu.be/210oNvf5OMc",
-    fixEnd: true
+    fixEnd: true,
   },
   {
     start: "Harlyn Bay",
@@ -115,7 +122,7 @@ const HIKE_DATA = [
     dad: true,
     olly: false,
     videoLink: "https://youtu.be/jGyB_yDCq4o",
-    fixEnd: true
+    fixEnd: true,
   },
   {
     start: "Porthcothan",
@@ -160,25 +167,28 @@ const HIKE_DATA = [
     start: "Holywell",
     end: "Newquay",
     direction: "N",
-    startCoords: [50.385772, -5.142560],
+    startCoords: [50.385772, -5.14256],
     endCoords: [50.415142, -5.076412],
     charlie: true,
     dad: true,
     olly: true,
     videoLink: "",
-    fixEnd: true
+    fixEnd: true,
+    date: "2023-07-05",
   },
   {
     start: "Holywell",
     end: "Trevaunance Cove",
     direction: "S",
-    startCoords: [50.385772, -5.142560],
+    startCoords: [50.385772, -5.14256],
     endCoords: [50.319018, -5.202245],
     charlie: true,
     dad: true,
     olly: true,
     videoLink: "",
+    date: "2023-07-04",
   },
+  // TODO: think there's an extra section here
   // Ending Newquay week in hotel
 
   // Starting middle section
@@ -197,6 +207,45 @@ const HIKE_DATA = [
   // Ending middle section
 
   // Starting clockwise direction
+  {
+    start: "Scabbacombe Beach",
+    end: "Dartmouth",
+    direction: "S",
+    startCoords: [50.3587, -3.5217],
+    endCoords: [50.3490, -3.5777],
+    charlie: true,
+    olly: true,
+    dad: true,
+    videoLink: "",
+    fixEnd: true,
+    date: "2025-08-28",
+  },
+  {
+    start: "Brixham",
+    end: "Scabbacombe Beach",
+    direction: "S",
+    startCoords: [50.4007, -3.5162],
+    endCoords: [50.3587, -3.5217],
+    charlie: true,
+    olly: true,
+    dad: true,
+    videoLink: "",
+    fixEnd: true,
+    date: "2025-08-28",
+  },
+  {
+    start: "Torquay",
+    end: "Brixham",
+    direction: "S",
+    startCoords: [50.4602, -3.5405],
+    endCoords: [50.4007, -3.5162],
+    charlie: true,
+    olly: true,
+    dad: true,
+    videoLink: "",
+    fixEnd: true,
+    date: "2025-08-27",
+  },
   {
     start: "Teigenmouth",
     end: "Torquay",

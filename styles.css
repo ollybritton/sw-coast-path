@@ -1,55 +1,133 @@
-:root {
+:root{
+  --sidebar-w: 360px;
+  --border: #e9e9e9;
+  --ink: #111;
+  --muted: #6b7280;
+  --bg: #fff;
+  --bg-elev: #fafafa;
+
   --color-olly: blue;
   --color-charlie: red;
   --color-dad: green;
 }
 
-body {
-  margin: 0;
+/* Base reset */
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body { margin: 0; color: var(--ink); background: var(--bg); }
+
+/* Layout */
+.layout {
+  display: grid;
+  grid-template-columns: var(--sidebar-w) 1fr;
+  grid-template-rows: 100vh;
 }
 
-#map {
-  height: 75svh;
-  width: 100%;
-  box-shadow: 0 5px 20px -2px #ddd;
+/* Map */
+.map { height: 100vh; width: 100%; }
+
+/* Sidebar (desktop) */
+.sidebar{
+  height: 100vh;
+  overflow: auto;
+  border-right: 1px solid var(--border);
+  background: var(--bg);
+  padding: 16px;
+}
+.sidebar-header p { color: var(--muted); }
+
+/* Tabs */
+.tabs { display: flex; gap: .5rem; margin-bottom: 8px; }
+.tab{
+  border: 1px solid var(--border);
+  background: var(--bg-elev);
+  border-radius: 999px;
+  padding: .35rem .8rem;
+  cursor: pointer;
+  font-size: .9rem;
+}
+.tab.active{ background:#eef3ff; border-color:#b9c8ff; }
+
+/* Panels */
+.tab-panel{ display:none; }
+.tab-panel.active{ display:block; }
+
+/* Sections list */
+.filters{ display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+.sections-list{
+  list-style:none; padding:0; margin:0;
+  display:flex; flex-direction:column; gap:8px;
+}
+.section-item{
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:10px 12px;
+  background:#fff;
+  display:grid;
+  grid-template-columns: 1fr auto;
+  grid-template-areas:
+    "title chips"
+    "meta chips";
+  row-gap:4px;
+  cursor:pointer;
+}
+.section-item:hover{ box-shadow:0 4px 14px rgba(0,0,0,.06); }
+.section-title{ grid-area:title; font-weight:600; }
+.section-meta{ grid-area:meta; color: var(--muted); font-size:.9rem; }
+.section-chips{ grid-area:chips; display:flex; gap:6px; align-items:center; }
+
+.badge{
+  border-radius:999px; padding:.15rem .5rem; border:1px solid var(--border);
+  font-size:.75rem; background:#f8f8f8;
+}
+.badge.video{ background:#f2ecff; border-color:#d3c6ff; }
+.dot{ width:10px; height:10px; border-radius:999px; display:inline-block; }
+.dot.charlie{ background: var(--color-charlie); }
+.dot.olly{ background: var(--color-olly); }
+.dot.dad{ background: var(--color-dad); }
+
+/* Walkers cards */
+.walkers-cards{ display:grid; gap:10px; }
+.walker-card{
+  border:1px solid var(--border); border-radius:12px; padding:12px; background:#fff;
+}
+.progress{
+  height:10px; background:#eee; border-radius:999px; overflow:hidden; margin-top:6px;
+}
+.progress .bar{ height:100%; background:#3b82f6; }
+
+/* Overall stats */
+.overall-stats .kpi{ display:grid; grid-template-columns:1fr auto; gap:4px; margin-bottom:10px; }
+.overall-stats .value{ font-weight:700; }
+
+/* Mobile bottom sheet behavior */
+.open-sidebar{
+  display:none;
+  position: fixed;
+  left: 12px; top: 12px;
+  z-index: 500;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 6px 10px;
+  box-shadow: 0 6px 16px rgba(0,0,0,.08);
 }
 
-.panel {
-  height: 25svh;
-  width: 100%;
-  overflow-y: scroll;
-}
-
-@media (min-width:320px) {
-  .panel {
-    height: 32svh;
+@media (max-width: 860px){
+  .layout{ grid-template-columns: 1fr; }
+  .sidebar{
+    position: fixed; left:0; right:0; bottom:0;
+    height: 70vh; max-height: 92vh;
+    border-right: none; border-top: 1px solid var(--border);
+    border-radius: 14px 14px 0 0;
+    box-shadow: 0 -12px 30px rgba(0,0,0,.08);
+    transform: translateY(100%);
+    transition: transform .25s ease-in-out;
+    z-index: 450;
   }
-
-  #map {
-    height: 68svh;
-  }
+  .sidebar.open{ transform: translateY(0); }
+  .open-sidebar{ display:block; }
 }
 
-h1 {
-  margin: 0 !important
-}
-
-.profile {
-  max-height: 10vh;
-}
-
-.profile-charlie {
-  border: var(--color-charlie) 3px solid;
-}
-
-.profile-olly {
-  border: var(--color-olly) 3px solid;
-}
-
-.profile-dad {
-  border: var(--color-dad) 3px solid;
-}
-
-#info-no-link {
-  opacity: 0.5;
-}
+/* Small utility */
+.light { opacity:.6; }
