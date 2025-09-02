@@ -1,27 +1,19 @@
 /* ====== CONFIG ====== */
-const ROUTE_URL = "route.gpx";   // the stitched, continuous GPX
-const PRE_DECIMATE_METERS = 5;              // quick dedupe before simplification
-const SNAP_TOL_METERS = 20;                 // smaller = curvier, a bit more CPU
-const OFFSET_METERS = 14;                   // lateral offset for triple-line look
-const BASE_WEIGHT = 11;                     // grey underlay
-const WALKER_WEIGHT = 8;                    // coloured overlays
+const ROUTE_URL = "route.gpx";         // stitched continuous GPX
+const PRE_DECIMATE_METERS = 5;         // quick dedupe before simplification
+const SNAP_TOL_METERS = 20;            // smaller = curvier
+const WALKER_WEIGHT = 6;               // coloured line weight
 
 /* ====== DOM ====== */
 const mapEl = document.getElementById("map");
 const sidebar = document.getElementById("sidebar");
 const openBtn = document.getElementById("open-sidebar");
 
-const tabs = Array.from(document.querySelectorAll(".tab"));
-const panels = {
-  sections: document.getElementById("tab-sections"),
-  walkers: document.getElementById("tab-walkers"),
-  stats: document.getElementById("tab-stats"),
-};
 const sectionsListEl = document.getElementById("sections-list");
 const sectionsCountEl = document.getElementById("sections-count");
 const filterVideosEl = document.getElementById("filter-videos");
-const walkersCardsEl = document.getElementById("walkers-cards");
 const overallStatsEl = document.getElementById("overall-stats");
+const walkersAvatarsEl = document.getElementById("walkers-avatars");
 
 /* ====== MAP ====== */
 const canvasRenderer = L.canvas({ padding: 0.5 });
@@ -31,16 +23,21 @@ L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
 }).addTo(map);
 L.control.attribution({ position: "topright" }).addTo(map);
 
-const sectionLayers = new Map(); // id -> { base, overlays[], bounds }
-
 /* ====== HELPERS ====== */
 const slug = s => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
-const makeId = s => `${slug(s.start)}_to_${slug(s.end)}`;
-
+const makeId = s => `${slug(s.start)}_to_${slug(s.end)}_${s.date || "nodate"}`;
 const toLngLat = ([lat, lng]) => [lng, lat];
 const toLatLng = ([lng, lat]) => [lat, lng];
 const coordsToLatLngs = coords => coords.map(toLatLng);
 const metersToDegrees = m => m / 111320;
+
+// RGB for rgba()
+const RGB = {
+  charlie: [220, 38, 38],   // red-600
+  olly:    [37, 99, 235],   // blue-600
+  dad:     [22, 163, 74],   // green-600
+};
+const rgba = (who, a) => `rgba(${RGB[who][0]},${RGB[who][1]},${RGB[who][2]},${a})`;
 
 function approxMeters([lon1, lat1], [lon2, lat2]) {
   const R = 6371000;
@@ -63,24 +60,23 @@ function preDecimate(lonlat, minMeters = PRE_DECIMATE_METERS) {
   return out;
 }
 
-/* Lateral offset (≈meters) for the triple-line look */
-function offsetLatLngs(latlngs, meters) {
-  if (Math.abs(meters) < 1e-6) return latlngs.slice();
+/* Pixel-space lateral offset for stable separation at any zoom */
+function offsetByPixels(latlngs, px) {
+  if (Math.abs(px) < 0.5 || latlngs.length < 2) return latlngs.slice();
   const out = [];
   for (let i = 0; i < latlngs.length; i++) {
-    const [lat, lng] = latlngs[i];
-    const [plat, plng] = latlngs[i - 1] || latlngs[i];
-    const [nlat, nlng] = latlngs[i + 1] || latlngs[i];
-    const lonPerDeg = 111320 * Math.cos(lat * Math.PI / 180);
-    const vx = (nlng - plng) * lonPerDeg;
-    const vy = (nlat - plat) * 111320;
+    const prev = latlngs[i - 1] || latlngs[i];
+    const next = latlngs[i + 1] || latlngs[i];
+    const P = map.latLngToLayerPoint(prev);
+    const C = map.latLngToLayerPoint(latlngs[i]);
+    const N = map.latLngToLayerPoint(next);
+    const vx = N.x - P.x, vy = N.y - P.y;
     const nx = -vy, ny = vx;
     const norm = Math.hypot(nx, ny) || 1;
-    const ux = (nx / norm) * meters;
-    const uy = (ny / norm) * meters;
-    const dLng = ux / lonPerDeg;
-    const dLat = uy / 111320;
-    out.push([lat + dLat, lng + dLng]);
+    const ox = (nx / norm) * px;
+    const oy = (ny / norm) * px;
+    const shifted = L.point(C.x + ox, C.y + oy);
+    out.push(map.layerPointToLatLng(shifted));
   }
   return out;
 }
@@ -88,14 +84,12 @@ function offsetLatLngs(latlngs, meters) {
 /* ====== ROUTE (continuous GPX) ====== */
 let ROUTE = null;         // Feature<LineString> simplified for snapping/slicing
 let ROUTE_MILES = 630;    // recomputed from ROUTE length
-let SECTIONS = [];        // built from walked items only
 
 async function loadRouteFromContinuousGPX() {
   const res = await fetch(ROUTE_URL, { cache: "force-cache" });
-  if (!res.ok) throw new Error("route_continuous.gpx not found");
+  if (!res.ok) throw new Error("route.gpx not found");
   const xml = new DOMParser().parseFromString(await res.text(), "application/xml");
 
-  // Collect *all* trkpt in document order (your stitched file should have a single trkseg)
   const pts = Array.from(xml.getElementsByTagName("trkpt"))
     .map(pt => [parseFloat(pt.getAttribute("lon")), parseFloat(pt.getAttribute("lat"))])
     .filter(([lon, lat]) => Number.isFinite(lon) && Number.isFinite(lat));
@@ -112,176 +106,282 @@ async function loadRouteFromContinuousGPX() {
 function sliceOnRoute(startLatLng, endLatLng) {
   const a = turf.nearestPointOnLine(ROUTE, toLngLat(startLatLng));
   const b = turf.nearestPointOnLine(ROUTE, toLngLat(endLatLng));
-
   let seg = turf.lineSlice(a, b, ROUTE);
-  // If empty or too short, try the other way
-  if (!seg || !seg.geometry || seg.geometry.coordinates.length < 2) {
-    seg = turf.lineSlice(b, a, ROUTE);
-  }
+  if (!seg || !seg.geometry || seg.geometry.coordinates.length < 2) seg = turf.lineSlice(b, a, ROUTE);
 
   const km = turf.length(seg, { units: "kilometers" });
   const latlngs = coordsToLatLngs(seg.geometry.coordinates);
   return { latlngs, km };
 }
 
-/* ====== BUILD ONLY WALKED SECTIONS ====== */
-function buildSections() {
-  const walked = HIKE_DATA.filter(d => d.charlie || d.olly || d.dad);
-  SECTIONS = walked.map((d, idx) => {
-    const id = makeId(d);
-    const { latlngs, km } = sliceOnRoute(d.startCoords, d.endCoords);
-    const miles = km * 0.621371;
+/* ====== DATA FROM NEW trips-based HIKE_DATA ====== */
+let TRIPS = [];                 // [{ name, year, sections:[...] }]
+let YEAR_GROUPS = [];           // [{ year, trips:[...] }]
+let SECTIONS_MAP = new Map();   // id -> section object
+let LINES = new Map();          // id -> { byWalker, bounds }
+let SECTION_ELEMENT = new Map();// id -> <li> element
 
-    return {
-      id,
-      order: idx,
-      title: `${d.start} → ${d.end}`,
-      start: d.start, end: d.end,
-      startCoords: d.startCoords, endCoords: d.endCoords,
-      latlngs, km, miles,
-      videoLink: d.videoLink || "",
-      charlie: !!d.charlie,
-      olly: !!d.olly,
-      dad: !!d.dad,
-    };
-  });
-}
+function buildFromTrips() {
+  TRIPS = [];
+  YEAR_GROUPS = [];
+  SECTIONS_MAP.clear();
 
-/* ====== RENDER SECTIONS ====== */
-function renderSection(section) {
-  const id = section.id;
+  HIKE_DATA.forEach(trip => {
+    const list = [];
+    (trip.sections || []).forEach(item => {
+      const tookPart = !!(item.charlie || item.olly || item.dad);
+      if (!tookPart) return;
 
-  // Grey underlay
-  const base = L.polyline(section.latlngs, {
-    color: "#333",
-    weight: BASE_WEIGHT,
-    opacity: 1,
-    lineCap: "round",
-    renderer: canvasRenderer,
-    smoothFactor: 1.2,
-  }).addTo(map);
+      const { latlngs, km } = sliceOnRoute(item.startCoords, item.endCoords);
+      const miles = km * 0.621371;
+      const id = makeId(item);
+      const year = item.date ? new Date(item.date).getFullYear() : null;
+      const sec = {
+        id, year,
+        tripName: trip.name,
+        start: item.start, end: item.end,
+        startCoords: item.startCoords, endCoords: item.endCoords,
+        direction: item.direction,
+        latlngs, km, miles,
+        charlie: !!item.charlie, olly: !!item.olly, dad: !!item.dad,
+        videoLink: item.videoLink || "",
+        date: item.date || "",
+        fixEnd: !!item.fixEnd,
+      };
+      list.push(sec);
+      SECTIONS_MAP.set(id, sec);
+    });
 
-  // Triple solid lines, offset and thick
-  const overlays = [];
-  const walkers = [
-    ["charlie", COLORS.charlie, -OFFSET_METERS],
-    ["olly",    COLORS.olly,          0],
-    ["dad",     COLORS.dad,     +OFFSET_METERS],
-  ];
-  walkers.forEach(([key, color, offset]) => {
-    if (!section[key]) return;
-    const offLatLngs = offsetLatLngs(section.latlngs, offset);
-    const line = L.polyline(offLatLngs, {
-      color,
-      weight: WALKER_WEIGHT,
-      opacity: 1,
-      lineCap: "round",
-      renderer: canvasRenderer,
-      smoothFactor: 1.2,
-    }).addTo(map);
-    overlays.push(line);
-  });
-
-  const bounds = base.getBounds();
-  sectionLayers.set(id, { base, overlays, bounds });
-
-  const onClick = () => focusSection(id);
-  base.on("click", onClick);
-  overlays.forEach(o => o.on("click", onClick));
-}
-
-/* ====== UI: Sections list ====== */
-function renderSectionsList() {
-  const onlyVideos = filterVideosEl.checked;
-  sectionsListEl.innerHTML = "";
-
-  const filtered = SECTIONS.filter(s => !onlyVideos || !!s.videoLink);
-  sectionsCountEl.textContent = `${filtered.length} section${filtered.length === 1 ? "" : "s"}`;
-
-  filtered.forEach(s => {
-    const li = document.createElement("li");
-    li.className = "section-item";
-    li.dataset.id = s.id;
-
-    const title = document.createElement("div");
-    title.className = "section-title";
-    title.textContent = s.title;
-
-    const meta = document.createElement("div");
-    meta.className = "section-meta";
-    const milesStr = `${s.miles.toFixed(1)} mi`;
-    meta.textContent = milesStr;
-
-    const chips = document.createElement("div");
-    chips.className = "section-chips";
-    if (s.charlie) chips.innerHTML += `<span class="dot charlie" title="Charlie"></span>`;
-    if (s.olly)    chips.innerHTML += `<span class="dot olly" title="Olly"></span>`;
-    if (s.dad)     chips.innerHTML += `<span class="dot dad" title="Dad"></span>`;
-    if (s.videoLink) {
-      const a = document.createElement("a");
-      a.className = "badge video";
-      a.href = s.videoLink;
-      a.target = "_blank";
-      a.rel = "noopener";
-      a.textContent = "Video ▶";
-      chips.appendChild(a);
+    if (list.length) {
+      const firstWithDate = list.find(s => s.year);
+      const year = firstWithDate ? firstWithDate.year : "";
+      TRIPS.push({ name: trip.name, year, sections: list });
     }
+  });
 
-    li.appendChild(title);
-    li.appendChild(meta);
-    li.appendChild(chips);
-    li.addEventListener("click", () => focusSection(s.id));
-    sectionsListEl.appendChild(li);
+  // group by year, newest first
+  const byYear = new Map();
+  TRIPS.forEach(t => {
+    const y = t.year || "Unknown";
+    if (!byYear.has(y)) byYear.set(y, []);
+    byYear.get(y).push(t);
+  });
+  YEAR_GROUPS = Array.from(byYear.entries())
+    .sort((a, b) => (b[0] + "").localeCompare(a[0] + ""))  // desc
+    .map(([year, trips]) => ({ year, trips }));
+}
+
+/* ====== DRAW LINES ====== */
+let NEWEST_YEAR = null;
+
+function computeNewestYear() {
+  let maxY = null;
+  TRIPS.forEach(trip => trip.sections.forEach(s => {
+    if (s.year && (maxY === null || s.year > maxY)) maxY = s.year;
+  }));
+  NEWEST_YEAR = maxY;
+}
+
+/* opacity gets a tiny reduction for older years (min 0.6) */
+function yearOpacity(year) {
+  return 1
+}
+
+function makeWalkerLine(latlngs, who, year) {
+  return L.polyline(latlngs, {
+    color: rgba(who, yearOpacity(year)), // paler for older years
+    weight: WALKER_WEIGHT, opacity: 1,
+    lineCap: "round", renderer: canvasRenderer, smoothFactor: 1.2,
+  }).addTo(map);
+}
+
+/* separation in pixels – tuned so it stays apart even when zoomed way out */
+function separationPX() {
+  const z = map.getZoom();
+  return z >= 12 ? 8 : z >= 10 ? 7 : z >= 8 ? 6 : 5;
+}
+
+function drawSection(section) {
+  const id = section.id;
+  const perWalker = {};
+  const offsets = { charlie: -1, olly: 0, dad: +1 };
+  const walkers = ["charlie", "olly", "dad"];
+  const px = separationPX();
+
+  walkers.forEach(w => {
+    if (!section[w]) return;
+    const offLatLngs = offsetByPixels(section.latlngs, offsets[w] * px);
+    perWalker[w] = makeWalkerLine(offLatLngs, w, section.year);
+  });
+
+  const tmp = L.polyline(section.latlngs);
+  const bounds = tmp.getBounds();
+  tmp.remove();
+
+  LINES.set(id, { byWalker: perWalker, bounds });
+
+  // clicking any coloured line focuses + highlights in sidebar
+  Object.values(perWalker).forEach(layer => {
+    layer.on("click", () => {
+      focusSection(id);
+      highlightInSidebar(id);
+    });
   });
 }
 
-/* ====== UI: Walkers + Stats ====== */
+let rafRefresh = null;
+function scheduleRefreshOffsets() {
+  if (rafRefresh) return;
+  rafRefresh = requestAnimationFrame(() => {
+    rafRefresh = null;
+    const px = separationPX();
+    SECTIONS_MAP.forEach(sec => {
+      const entry = LINES.get(sec.id);
+      if (!entry) return;
+      const offsets = { charlie: -1, olly: 0, dad: +1 };
+      Object.entries(entry.byWalker).forEach(([w, layer]) => {
+        const latlngs = offsetByPixels(sec.latlngs, offsets[w] * px);
+        layer.setLatLngs(latlngs);
+      });
+    });
+  });
+}
+
+/* ====== UI (year groups → trips → sections) ====== */
+function sectionDotsHTML(s){
+  const dots = [];
+  if (s.charlie) dots.push('<span class="dot charlie" title="Charlie"></span>');
+  if (s.olly)    dots.push('<span class="dot olly" title="Olly"></span>');
+  if (s.dad)     dots.push('<span class="dot dad" title="Dad"></span>');
+  return `<div class="dotrow">${dots.join("")}</div>`;
+}
+
+function renderTripsList() {
+  const videoOnly = filterVideosEl.checked;
+  sectionsListEl.innerHTML = "";
+  SECTION_ELEMENT.clear();
+
+  let count = 0;
+
+  YEAR_GROUPS.reverse().forEach(group => {
+    // year heading
+    const wrap = document.createElement("div");
+    wrap.className = "year-group";
+    const h = document.createElement("div");
+    h.className = "year-heading";
+    h.textContent = group.year;
+    wrap.appendChild(h);
+
+    group.trips.forEach(trip => {
+      const children = trip.sections.filter(s => !videoOnly || !!s.videoLink);
+      if (!children.length) return;
+
+      const groupDiv = document.createElement("div");
+      groupDiv.className = "trip-group";
+
+      const header = document.createElement("div");
+      header.className = "trip-header";
+      header.textContent = trip.name;
+      groupDiv.appendChild(header);
+
+      const ul = document.createElement("ul");
+      ul.className = "trip-sections";
+
+      children.forEach(s => {
+        count++;
+
+        const li = document.createElement("li");
+        li.className = "section-item";
+        li.dataset.id = s.id;
+
+        const title = document.createElement("div");
+        title.className = "section-title";
+        title.textContent = `${s.start} → ${s.end}`;
+
+        const meta = document.createElement("div");
+        meta.className = "section-meta";
+        const milesStr = `${s.miles.toFixed(1)} mi`;
+        meta.textContent = s.date ? `${milesStr} • ${s.date}` : milesStr;
+
+        const chips = document.createElement("div");
+        chips.className = "section-chips";
+
+        if (s.videoLink) {
+          const a = document.createElement("a");
+          a.className = "badge video";
+          a.href = s.videoLink; a.target = "_blank"; a.rel = "noopener";
+          a.textContent = "Video ▶";
+          chips.appendChild(a);
+        } else {
+          const span = document.createElement("span");
+          span.className = "badge novideo";
+          span.textContent = "No video";
+          chips.appendChild(span);
+        }
+        chips.insertAdjacentHTML("beforeend", sectionDotsHTML(s));
+
+        li.appendChild(title);
+        li.appendChild(meta);
+        li.appendChild(chips);
+        li.addEventListener("click", () => focusSection(s.id));
+
+        SECTION_ELEMENT.set(s.id, li);
+        ul.appendChild(li);
+      });
+
+      groupDiv.appendChild(ul);
+      wrap.appendChild(groupDiv);
+    });
+
+    sectionsListEl.appendChild(wrap);
+  });
+
+  sectionsCountEl.textContent = `${count} section${count === 1 ? "" : "s"}`;
+}
+
+/* ====== Stats + avatars with progress pies ====== */
 function computeStats() {
   const perWalker = {
-    charlie: { name: "Charlie", miles: 0, sections: 0, color: COLORS.charlie },
-    olly:    { name: "Olly",    miles: 0, sections: 0, color: COLORS.olly },
-    dad:     { name: "Dad",     miles: 0, sections: 0, color: COLORS.dad },
+    charlie: { name: "Charlie", miles: 0, sections: 0, img: "images/charlie.jpg" },
+    olly:    { name: "Olly",    miles: 0, sections: 0, img: "images/olly.jpg" },
+    dad:     { name: "Dad",     miles: 0, sections: 0, img: "images/dad.jpg" },
   };
   let overallMiles = 0;
   let overallSections = 0;
 
-  SECTIONS.forEach(s => {
-    const m = s.miles;
-    overallMiles += m;
-    overallSections++;
-    if (s.charlie) { perWalker.charlie.miles += m; perWalker.charlie.sections++; }
-    if (s.olly)    { perWalker.olly.miles    += m; perWalker.olly.sections++; }
-    if (s.dad)     { perWalker.dad.miles     += m; perWalker.dad.sections++; }
+  TRIPS.forEach(trip => {
+    trip.sections.forEach(s => {
+      overallMiles += s.miles; overallSections++;
+      if (s.charlie) { perWalker.charlie.miles += s.miles; perWalker.charlie.sections++; }
+      if (s.olly)    { perWalker.olly.miles    += s.miles; perWalker.olly.sections++; }
+      if (s.dad)     { perWalker.dad.miles     += s.miles; perWalker.dad.sections++; }
+    });
   });
+
   return { perWalker, overallMiles, overallSections };
 }
 
-function renderWalkers(stats) {
-  walkersCardsEl.innerHTML = "";
-  Object.values(stats.perWalker).forEach(w => {
-    const pct = Math.min(100, Math.round((w.miles / ROUTE_MILES) * 100));
-    const card = document.createElement("div");
-    card.className = "walker-card";
-    card.innerHTML = `
-      <div class="flex items-center justify-between">
-        <div class="flex items-center">
-          <span class="dot" style="background:${w.color}; margin-right:8px;"></span>
-          <strong>${w.name}</strong>
-        </div>
-        <span class="value">${w.miles.toFixed(1)} mi</span>
+function renderAvatars(stats) {
+  walkersAvatarsEl.innerHTML = "";
+  Object.entries(stats.perWalker).forEach(([key, w]) => {
+    const pct = Math.min(100, (w.miles / ROUTE_MILES) * 100);
+    const wrap = document.createElement("div");
+    wrap.className = "avatar-wrap";
+    wrap.innerHTML = `
+      <div class="avatar-pie" style="--pct:${pct}; --color:${rgba(key, 1)};">
+        <img src="${w.img}" alt="${w.name}">
       </div>
-      <div class="progress"><div class="bar" style="width:${pct}%"></div></div>
-      <div class="mt1 silver f6">${pct}% of ~${ROUTE_MILES} miles • ${w.sections} section${w.sections===1?"":"s"}</div>
+      <div class="avatar-label">${w.name} · ${pct.toFixed(0)}%</div>
     `;
-    walkersCardsEl.appendChild(card);
+    walkersAvatarsEl.appendChild(wrap);
   });
 }
 
 function renderOverall(stats) {
   overallStatsEl.innerHTML = `
-    <div class="kpi"><div class="label">Total miles</div><div class="value">${stats.overallMiles.toFixed(1)} mi</div></div>
-    <div class="kpi"><div class="label">Sections</div><div class="value">${stats.overallSections}</div></div>
-    <div class="kpi"><div class="label">Route length</div><div class="value">~${ROUTE_MILES} mi</div></div>
+  <div class="kpi"><div class="label">Total miles</div><div class="value">${ROUTE_MILES.toFixed(1)} mi</div></div>
+    <div class="kpi"><div class="label">Done miles</div><div class="value">${stats.overallMiles.toFixed(1)} mi</div></div>
+    <div class="kpi"><div class="label">Done sections</div><div class="value">${stats.overallSections}</div></div>
   `;
 }
 
@@ -289,82 +389,82 @@ function renderOverall(stats) {
 let currentId = null;
 function focusSection(id) {
   currentId = id;
-  const layer = sectionLayers.get(id);
-  if (!layer) return;
-  map.fitBounds(layer.bounds.pad(0.25));
-  if (window.matchMedia("(max-width: 860px)").matches) {
-    sidebar.classList.add("open");
-    setTimeout(() => map.invalidateSize(), 250);
-  }
-  sectionLayers.forEach(({ base, overlays }, key) => {
+  const entry = LINES.get(id);
+  if (!entry) return;
+  map.fitBounds(entry.bounds.pad(0.25));
+  // emphasize selected by weight bump
+  LINES.forEach((v, key) => {
     const selected = key === id;
-    base.setStyle({ weight: selected ? BASE_WEIGHT + 2 : BASE_WEIGHT });
-    overlays.forEach(o => o.setStyle({ weight: selected ? WALKER_WEIGHT + 2 : WALKER_WEIGHT }));
+    Object.values(v.byWalker).forEach(layer => {
+      layer.setStyle({ weight: selected ? (WALKER_WEIGHT + 2) : WALKER_WEIGHT });
+    });
   });
+  // keep the sheet visible on mobile
+  if (window.matchMedia("(max-width: 860px)").matches) {
+    sidebar.classList.remove("closed");
+    setTimeout(() => map.invalidateSize(), 200);
+  }
+  highlightInSidebar(id);
 }
 
-/* ====== Tabs + mobile toggles ====== */
-tabs.forEach(btn => {
-  btn.addEventListener("click", () => {
-    tabs.forEach(b => b.classList.toggle("active", b === btn));
-    const name = btn.dataset.tab;
-    Object.entries(panels).forEach(([k, el]) => el.classList.toggle("active", k === name));
-  });
-});
-openBtn.addEventListener("click", () => {
-  sidebar.classList.toggle("open");
-  setTimeout(() => map.invalidateSize(), 260);
-});
-map.on("click", () => {
-  if (sidebar.classList.contains("open")) {
-    sidebar.classList.remove("open");
-    setTimeout(() => map.invalidateSize(), 260);
+function highlightInSidebar(id) {
+  SECTION_ELEMENT.forEach(el => el.classList.remove("active"));
+  const el = SECTION_ELEMENT.get(id);
+  if (el) {
+    el.classList.add("active");
+    el.scrollIntoView({ behavior: "smooth", block: "center" });
   }
+}
+
+/* ====== Mobile toggle ====== */
+openBtn.addEventListener("click", () => {
+  sidebar.classList.toggle("closed");
+  setTimeout(() => map.invalidateSize(), 260);
 });
 
 /* ====== MAIN ====== */
 (async function init() {
   await loadRouteFromContinuousGPX();
 
-  // Build & draw ONLY walked sections
-  const walked = HIKE_DATA.filter(d => d.charlie || d.olly || d.dad);
+  buildFromTrips();
+  computeNewestYear();
 
-  // Optional markers only for walked sections’ starts (and flagged ends)
-  walked.forEach(d => {
-    const startMarker = L.marker(d.startCoords, {
-      title: d.start,
-      icon: L.icon({
+  // Draw all sections
+  TRIPS.forEach(trip => trip.sections.forEach(drawSection));
+
+  // Start/end markers (smaller) for each section start and any flagged end
+  TRIPS.forEach(trip => {
+    trip.sections.forEach(d => {
+      const icon = L.icon({
         iconUrl: MARKER_ICON_URL, shadowUrl: MARKER_SHADOW_URL,
-        iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41],
-      })
-    }).addTo(map);
-    startMarker.bindPopup(d.start);
-    if (d.fixEnd) {
-      const endMarker = L.marker(d.endCoords, {
-        title: d.end,
-        icon: L.icon({
-          iconUrl: MARKER_ICON_URL, shadowUrl: MARKER_SHADOW_URL,
-          iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41],
-        })
-      }).addTo(map);
-      endMarker.bindPopup(d.end);
-    }
+        iconSize: [20, 32], iconAnchor: [10, 32], popupAnchor: [1, -28], shadowSize: [32, 32],
+      });
+      const s = L.marker(d.startCoords, { title: d.start, icon }).addTo(map);
+      s.bindPopup(d.start);
+      if (d.fixEnd) {
+        const e = L.marker(d.endCoords, { title: d.end, icon }).addTo(map);
+        e.bindPopup(d.end);
+      }
+    });
   });
 
-  buildSections();
-  SECTIONS.forEach(s => renderSection(s));
-
-  // UI
-  renderSectionsList();
+  // Sidebar UI
+  renderTripsList();
   const stats = computeStats();
-  renderWalkers(stats);
+  renderAvatars(stats);      // images + progress pies
   renderOverall(stats);
-  filterVideosEl.addEventListener("change", renderSectionsList);
+  filterVideosEl.addEventListener("change", renderTripsList);
 
-  // Fit to walked geometry
-  if (sectionLayers.size) {
-    const groupBounds = Array.from(sectionLayers.values())
+  // Fit map to all drawn bounds
+  if (LINES.size) {
+    const groupBounds = Array.from(LINES.values())
       .reduce((acc, { bounds }) => acc ? acc.extend(bounds) : bounds, null);
     if (groupBounds) map.fitBounds(groupBounds.pad(0.2));
   }
+
+  // keep three lines separated at any zoom/pan (pixel-space offsets)
+  map.on("zoom", scheduleRefreshOffsets);
+  map.on("zoomend", scheduleRefreshOffsets);
+  map.on("moveend", scheduleRefreshOffsets);
+  scheduleRefreshOffsets();
 })();

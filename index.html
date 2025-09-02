@@ -13,6 +13,7 @@
 
 <body class="baskerville">
   <div id="app" class="layout">
+    <!-- closed by default on mobile so it doesn’t cover too much -->
     <aside id="sidebar" class="sidebar">
       <header class="sidebar-header">
         <h1 class="fw1 ma0">🗺️ SW Coast Path</h1>
@@ -21,41 +22,33 @@
           <a href="https://www.youtube.com/@candovlogs" target="_blank" rel="noopener">YouTube channel</a>.
         </p>
 
-      <div class="tabs">
-        <button class="tab active" data-tab="sections">Sections</button>
-        <button class="tab" data-tab="walkers">Walkers</button>
-        <button class="tab" data-tab="stats">Stats</button>
-      </div>
+        <!-- Walkers: centered, larger, images + progress pies -->
+        <div id="walkers-avatars" class="walkers-avatars"></div>
+
+        <!-- compact KPIs -->
+        <div id="overall-stats" class="overall-stats"></div>
       </header>
 
-      <section id="tab-sections" class="tab-panel active">
+      <!-- Single merged panel -->
+      <section class="tab-panel active">
         <div class="filters">
           <label class="mr3">
             <input id="filter-videos" type="checkbox" />
-            <span class="ml1">Videos only</span>
+            <span class="ml1" id="video-toggle-label">Show sections with videos only</span>
           </label>
           <span class="silver f6" id="sections-count"></span>
         </div>
-        <ul id="sections-list" class="sections-list"></ul>
-      </section>
-
-      <section id="tab-walkers" class="tab-panel">
-        <div id="walkers-cards" class="walkers-cards"></div>
-      </section>
-
-      <section id="tab-stats" class="tab-panel">
-        <div id="overall-stats" class="overall-stats"></div>
+        <div id="sections-list" class="sections-list"></div>
       </section>
     </aside>
 
     <div id="map" class="map"></div>
-    <button id="open-sidebar" class="open-sidebar" aria-label="Open details">☰</button>
+    <button id="open-sidebar" class="open-sidebar" aria-label="Toggle details">☰</button>
+
+    <script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script defer src="https://unpkg.com/@turf/turf@6/turf.min.js"></script>
+    <script defer src="data.js"></script>
+    <script defer src="scripts.js"></script>
   </div>
-
-  <script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script defer src="https://unpkg.com/@turf/turf@6/turf.min.js"></script>
-
-  <script defer src="data.js"></script>
-  <script defer src="scripts.js"></script>
 </body>
 </html>
