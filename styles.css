@@ -150,7 +150,7 @@ body { margin: 0; color: var(--ink); background: var(--bg); }
   .layout{ grid-template-columns: 1fr; }
   .sidebar{
     position: fixed; left:0; right:0; bottom:0;
-    height: 55vh;                      /* smaller on mobile */
+    height: 35vh;                      /* smaller on mobile */
     max-height: 90vh;
     border-right: none; border-top: 1px solid var(--border);
     border-radius: 14px 14px 0 0;

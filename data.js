@@ -12,13 +12,13 @@ const COLORS = {
 
 const HIKE_DATA = [
     {
-        name: "First anticlockwise trip in 2021 with everyone",
+        name: "First trip starting from the north end",
         sections: [
             {
                 start: "Minehead",
                 end: "Porlock Weir",
                 direction: "S",
-                startCoords: [51.21, -3.477],
+                startCoords: [51.2154, -3.4773],
                 endCoords: [51.2178, -3.6266],
                 charlie: true,
                 olly: true,
@@ -78,20 +78,8 @@ const HIKE_DATA = [
     },
 
     {
-        name: "Charlie and Dad start the other end",
+        name: "Charlie and Dad start the south end",
         sections: [
-            {
-                start: "Dancing Ledge",
-                end: "Swanage",
-                direction: "N",
-                startCoords: [50.592487, -2.00549],
-                endCoords: [50.6083, -1.9608],
-                charlie: true,
-                olly: false,
-                dad: true,
-                videoLink: "https://youtu.be/BkH-Z1v7gkM",
-                date: "2022-04-30",
-            },
             {
                 start: "Shell Bay",
                 end: "Swanage",
@@ -105,59 +93,35 @@ const HIKE_DATA = [
                 fixEnd: true,
                 date: "2022-04-29",
             },
+            {
+                start: "Dancing Ledge",
+                end: "Swanage",
+                direction: "N",
+                startCoords: [50.592487, -2.00549],
+                endCoords: [50.6083, -1.9608],
+                charlie: true,
+                olly: false,
+                dad: true,
+                videoLink: "https://youtu.be/BkH-Z1v7gkM",
+                date: "2022-04-30",
+            },
         ]
     },
 
     {
-        name: "Charlie and Dad second trip in 2022",
+        name: "Charlie and Dad continue from the south but skip Lulworth",
         sections: [
             {
-                start: "West Bay",
-                end: "West Bexington",
+                start: "Osmington Mills",
+                end: "Lulworth Cove",
                 direction: "N",
-                startCoords: [50.7117, -2.7636],
-                endCoords: [50.679, -2.6615],
+                startCoords: [50.6346, -2.3753],
+                endCoords: [50.6182, -2.247],
                 charlie: true,
                 olly: false,
                 dad: true,
                 videoLink: "",
-                date: "2022-06-30",
-            },
-            {
-                start: "West Bexington",
-                end: "Bagwell Farm",
-                direction: "S",
-                startCoords: [50.679, -2.6615],
-                endCoords: [50.633, -2.5297],
-                charlie: true,
-                olly: false,
-                dad: true,
-                videoLink: "",
-                date: "2022-06-29",
-            },
-            {
-                start: "Bagwell Farm",
-                end: "Portland Loop",
-                direction: "S",
-                startCoords: [50.633, -2.5297],
-                endCoords: [50.5142, -2.4594],
-                charlie: true,
-                olly: false,
-                dad: true,
-                videoLink: "",
-                date: "2022-06-28",
-            },
-            {
-                start: "Portland Loop",
-                end: "Ferrybridge",
-                direction: "N",
-                startCoords: [50.5142, -2.4594],
-                endCoords: [50.5860971, -2.474905],
-                charlie: true,
-                olly: false,
-                dad: true,
-                videoLink: "",
-                date: "2022-06-08",
+                date: "2022-06-06",
             },
             {
                 start: "Ferrybridge",
@@ -172,22 +136,64 @@ const HIKE_DATA = [
                 date: "2022-06-07",
             },
             {
-                start: "Osmington Mills",
-                end: "Lulworth Cove",
+                start: "Portland Loop",
+                end: "Ferrybridge",
                 direction: "N",
-                startCoords: [50.6346, -2.3753],
-                endCoords: [50.6182, -2.247],
+                startCoords: [50.5142, -2.4594],
+                endCoords: [50.5860971, -2.474905],
                 charlie: true,
                 olly: false,
                 dad: true,
                 videoLink: "",
-                date: "2022-06-06",
+                date: "2022-06-08",
             },
         ],
     },
 
     {
-        name: "Anticlockwise top-up with Dad and Olly",
+        name: "Charlie and Dad continue from Portland",
+        sections: [
+            {
+                start: "Bagwell Farm",
+                end: "Portland Loop",
+                direction: "S",
+                startCoords: [50.633, -2.5297],
+                endCoords: [50.5142, -2.4594],
+                charlie: true,
+                olly: false,
+                dad: true,
+                videoLink: "",
+                date: "2022-06-28",
+            },
+            {
+                start: "West Bexington",
+                end: "Bagwell Farm",
+                direction: "S",
+                startCoords: [50.679, -2.6615],
+                endCoords: [50.633, -2.5297],
+                charlie: true,
+                olly: false,
+                dad: true,
+                videoLink: "",
+                date: "2022-06-29",
+            },
+            {
+                start: "West Bay",
+                end: "West Bexington",
+                direction: "N",
+                startCoords: [50.7117, -2.7636],
+                endCoords: [50.679, -2.6615],
+                charlie: true,
+                olly: false,
+                dad: true,
+                videoLink: "",
+                date: "2022-06-30",
+            },
+        ]
+    },
+
+    {
+        name: "Dad and Olly fill out the next section in the north",
         sections: [
             {
                 start: "Croyde",
@@ -198,7 +204,7 @@ const HIKE_DATA = [
                 charlie: false,
                 olly: true,
                 dad: true,
-                videoLink: "",
+                videoLink: "https://youtu.be/vkObBdERalg",
                 date: "2022-07-11",
             },
             {
@@ -210,28 +216,28 @@ const HIKE_DATA = [
                 charlie: false,
                 olly: true,
                 dad: true,
-                videoLink: "",
-                fixEnd: true,
+                videoLink: "https://youtu.be/vkObBdERalg",
+                fixEnd: false,
                 date: "2022-07-12",
             },
+            {
+                start: "Yelland",
+                end: "Bideford",
+                startCoords: [51.0688, -4.1524],
+                endCoords: [51.0228, -4.2029],
+                charlie: false,
+                olly: true,
+                dad: true,
+                videoLink: "https://youtu.be/vkObBdERalg",
+                fixEnd: true,
+                date: "2022-07-13",
+            }
         ],
     },
 
     {
-        name: "West Bay to Seaton as a group",
+        name: "Everyone does the next section of the south",
         sections: [
-            {
-                start: "Seaton",
-                end: "Lyme Regis",
-                direction: "N",
-                startCoords: [50.7053, -3.0719],
-                endCoords: [50.7252, -2.9366],
-                charlie: true,
-                olly: true,
-                dad: true,
-                videoLink: "https://youtu.be/vB_wt8IAkLQ",
-                date: "2022-08-03",
-            },
             {
                 start: "Lyme Regis",
                 end: "West Bay",
@@ -244,11 +250,23 @@ const HIKE_DATA = [
                 videoLink: "https://youtu.be/vB_wt8IAkLQ",
                 date: "2022-08-02",
             },
+            {
+                start: "Seaton",
+                end: "Lyme Regis",
+                direction: "N",
+                startCoords: [50.7053, -3.0719],
+                endCoords: [50.7252, -2.9366],
+                charlie: true,
+                olly: true,
+                dad: true,
+                videoLink: "https://youtu.be/vB_wt8IAkLQ",
+                date: "2022-08-03",
+            },
         ],
     },
 
     {
-        name: "Charlie and Dad fill in Lulworth section",
+        name: "Charlie and Dad go back to fill in the Lulworth section",
         sections: [
             {
                 start: "Kimmeridge",
@@ -278,7 +296,7 @@ const HIKE_DATA = [
     },
 
     {
-        name: "Continuing on from Seaton as a group",
+        name: "Everyone does the next section from Seaton (with the dog!)",
         sections: [
             {
                 start: "Sidmouth",
@@ -289,7 +307,8 @@ const HIKE_DATA = [
                 charlie: true,
                 olly: true,
                 dad: true,
-                videoLink: "2023-04-10",
+                videoLink: "",
+                date: "2023-04-10",
             },      
             {
                 start: "Sidmouth",
@@ -331,7 +350,8 @@ const HIKE_DATA = [
     },
 
     {
-        name: "Dad's random solo adventure",
+        // TODO: Pretty sure there is no video for this section
+        name: "Dad does a random solo walk in Cornwall",
         sections: [
             {
                 start: "Trevaunance Cove",
@@ -342,7 +362,7 @@ const HIKE_DATA = [
                 charlie: false,
                 olly: false,
                 dad: true,
-                videoLink: "",
+                videoLink: "none",
                 fixEnd: true,
                 date: "2023-07-03",
             },
@@ -350,7 +370,8 @@ const HIKE_DATA = [
     },
 
     {
-        name: "From a hotel in Newquay with everyone",
+        // TODO: Pretty sure there is no video for this section
+        name: "Everyone fills out a new disconnected section around Newquay",
         sections: [
             {
                 start: "Holywell",
@@ -361,7 +382,7 @@ const HIKE_DATA = [
                 charlie: true,
                 dad: true,
                 olly: true,
-                videoLink: "",
+                videoLink: "none",
                 date: "2023-07-04",
             },
             {
@@ -373,7 +394,7 @@ const HIKE_DATA = [
                 charlie: true,
                 dad: true,
                 olly: true,
-                videoLink: "",
+                videoLink: "none",
                 fixEnd: true,
                 date: "2023-07-05",
             },
@@ -386,15 +407,14 @@ const HIKE_DATA = [
                 charlie: true,
                 dad: true,
                 olly: true,
-                videoLink: "",
+                videoLink: "none",
                 date: "2023-07-06",
             },
         ]
     },
     
     {
-        // Starting Charlie and Dad Padstow bit
-        name: "Charlie and Dad tackle more of the middle",
+        name: "Charlie and Dad tackle more of the new middle section",
         sections: [
             {
                 start: "Porthcothan",
@@ -450,7 +470,7 @@ const HIKE_DATA = [
     },
 
     {
-        name: "Teigenmouth to Dartmouth with everyone",
+        name: "Everyone continues from the progress made at the south end",
         sections: [
             {
                 start: "Teigenmouth",
