@@ -335,7 +335,7 @@ const HIKE_DATA = [
                 date: "2023-04-12",
             },
             {
-                start: "Teigenmouth",
+                start: "Teignmouth",
                 end: "Exmouth",
                 direction: "N",
                 endCoords: [50.6219, -3.4161],
@@ -473,7 +473,7 @@ const HIKE_DATA = [
         name: "Everyone continues from the progress made at the south end",
         sections: [
             {
-                start: "Teigenmouth",
+                start: "Teignmouth",
                 end: "Torquay",
                 direction: "S",
                 startCoords: [50.5403, -3.5036],
