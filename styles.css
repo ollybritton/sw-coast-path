@@ -89,6 +89,7 @@ body { margin: 0; color: var(--ink); background: var(--bg); }
 
 .section-item{
   border:1px solid var(--border);
+  border-left: 4px solid #ddd;
   border-radius:12px;
   padding:10px 12px;
   background:#fff;
@@ -170,3 +171,11 @@ body { margin: 0; color: var(--ink); background: var(--bg); }
 #video-toggle-label {
     user-select: none;
 }
+
+.hover-popup .leaflet-popup-content-wrapper {
+    font-size: .85rem;
+    padding: 2px 4px;
+    border-radius: 8px;
+}
+.hover-popup .leaflet-popup-content { margin: 8px 10px; }
+.hover-popup .leaflet-popup-tip-container { display: none; }

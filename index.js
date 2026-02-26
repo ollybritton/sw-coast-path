@@ -16,12 +16,22 @@ const walkersAvatarsEl = document.getElementById("walkers-avatars");
 
 let rafRefresh = null;
 let lastCorridor = null;
+let hoverPopup = null;
 
 /* ====== MAP ====== */
 const canvasRenderer = L.canvas({ padding: 0.5 });
 const map = L.map(mapEl, { attributionControl: false, preferCanvas: true, zoomControl: false }).setView([50.7, -3.5], 8);
 L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
     attribution: '&copy; OpenStreetMap contributors', maxZoom: 19
+}).addTo(map);
+// Labels-on-top pane: sits above the route corridors so place names stay readable
+map.createPane("labels");
+map.getPane("labels").style.zIndex = 650;
+map.getPane("labels").style.pointerEvents = "none";
+L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}{r}.png", {
+    attribution: '&copy; <a href="https://carto.com/">CARTO</a>',
+    pane: "labels",
+    maxZoom: 19,
 }).addTo(map);
 L.control.attribution({ position: "topright" }).addTo(map);
 
@@ -32,6 +42,48 @@ const toLngLat = ([lat, lng]) => [lng, lat];
 const toLatLng = ([lng, lat]) => [lat, lng];
 const coordsToLatLngs = coords => coords.map(toLatLng);
 const metersToDegrees = m => m / 111320;
+
+function relativeTime(dateStr) {
+    if (!dateStr) return "";
+    const days = Math.floor((new Date() - new Date(dateStr)) / 86400000);
+    if (days < 30) return `${days}d ago`;
+    if (days < 365) return `${Math.floor(days / 30)}mo ago`;
+    const y = Math.floor(days / 365);
+    const m = Math.floor((days % 365) / 30);
+    return m > 0 ? `${y}y ${m}mo ago` : `${y}y ago`;
+}
+
+function ageColor(dateStr) {
+    if (!dateStr) return "#ddd";
+    const days = Math.floor((new Date() - new Date(dateStr)) / 86400000);
+    if (days < 365) return "#22c55e";
+    if (days < 730) return "#3b82f6";
+    if (days < 1095) return "#f59e0b";
+    return "#9ca3af";
+}
+
+function walkerNames(s) {
+    const names = [];
+    if (s.charlie) names.push("Charlie");
+    if (s.olly) names.push("Olly");
+    if (s.dad) names.push("Dad");
+    return names.join(", ");
+}
+
+function mergeIntervals(intervals) {
+    if (!intervals.length) return [];
+    intervals.sort((a, b) => a[0] - b[0]);
+    const merged = [intervals[0].slice()];
+    for (let i = 1; i < intervals.length; i++) {
+        const last = merged[merged.length - 1];
+        if (intervals[i][0] <= last[1]) {
+            last[1] = Math.max(last[1], intervals[i][1]);
+        } else {
+            merged.push(intervals[i].slice());
+        }
+    }
+    return merged;
+}
 
 // RGB for rgba()
 const RGB = {
@@ -113,7 +165,9 @@ function sliceOnRoute(startLatLng, endLatLng) {
 
     const km = turf.length(seg, { units: "kilometers" });
     const latlngs = coordsToLatLngs(seg.geometry.coordinates);
-    return { latlngs, km };
+    const startKm = Math.min(a.properties.location, b.properties.location);
+    const endKm = Math.max(a.properties.location, b.properties.location);
+    return { latlngs, km, startKm, endKm };
 }
 
 /* ====== DATA FROM NEW trips-based HIKE_DATA ====== */
@@ -134,7 +188,7 @@ function buildFromTrips() {
             const tookPart = !!(item.charlie || item.olly || item.dad);
             if (!tookPart) return;
 
-            const { latlngs, km } = sliceOnRoute(item.startCoords, item.endCoords);
+            const { latlngs, km, startKm, endKm } = sliceOnRoute(item.startCoords, item.endCoords);
             const miles = km * 0.621371;
             const id = makeId(item);
             const year = item.date ? new Date(item.date).getFullYear() : null;
@@ -144,7 +198,7 @@ function buildFromTrips() {
                 start: item.start, end: item.end,
                 startCoords: item.startCoords, endCoords: item.endCoords,
                 direction: item.direction,
-                latlngs, km, miles,
+                latlngs, km, miles, startKm, endKm,
                 charlie: !!item.charlie, olly: !!item.olly, dad: !!item.dad,
                 videoLink: item.videoLink || "",
                 date: item.date || "",
@@ -190,11 +244,13 @@ function yearOpacity(year) {
 }
 
 function getWalkerWeight() {
-    if (map.getZoom() <= 9) {
-        return 500;
-    }
-
-    return 150;
+    const z = map.getZoom();
+    if (z <= 9) return 500;
+    if (z <= 12) return 150;
+    // Above zoom 12, shrink the corridor so lines thin out on screen.
+    // Factor 0.4 per zoom level → pixel width shrinks ~0.8× per zoom step
+    // (mpp halves each zoom, 0.4/0.5 = 0.8), giving a gentle decrease.
+    return 150 * Math.pow(0.4, z - 12);
 }
 
 
@@ -236,9 +292,21 @@ function drawSection(section) {
 
     LINES.set(id, { byWalker: perWalker, bounds });
 
-    // clicking any coloured line focuses + highlights in sidebar
+    // hover tooltip + click to focus
     Object.values(perWalker).forEach(layer => {
+        layer.on("mouseover", (e) => {
+            if (hoverPopup) map.closePopup(hoverPopup);
+            const ago = section.date ? relativeTime(section.date) : "";
+            hoverPopup = L.popup({ closeButton: false, className: "hover-popup", offset: [0, -5], autoPan: false })
+                .setLatLng(e.latlng)
+                .setContent(`<b>${section.start} \u2192 ${section.end}</b><br>${section.miles.toFixed(1)} mi${section.date ? ` \u00b7 ${ago}` : ""}<br>${walkerNames(section)}`)
+                .openOn(map);
+        });
+        layer.on("mouseout", () => {
+            if (hoverPopup) { map.closePopup(hoverPopup); hoverPopup = null; }
+        });
         layer.on("click", () => {
+            if (hoverPopup) { map.closePopup(hoverPopup); hoverPopup = null; }
             focusSection(id);
             highlightInSidebar(id);
         });
@@ -332,7 +400,8 @@ function renderTripsList() {
                 const meta = document.createElement("div");
                 meta.className = "section-meta";
                 const milesStr = `${s.miles.toFixed(1)} mi`;
-                meta.textContent = s.date ? `${milesStr} • ${s.date}` : milesStr;
+                const ago = s.date ? relativeTime(s.date) : "";
+                meta.textContent = s.date ? `${milesStr} • ${ago}` : milesStr;
 
                 const chips = document.createElement("div");
                 chips.className = "section-chips";
@@ -356,6 +425,8 @@ function renderTripsList() {
                 }
                 chips.insertAdjacentHTML("beforeend", sectionDotsHTML(s));
 
+                li.style.borderLeftColor = ageColor(s.date);
+                li.title = `${s.tripName}\n${walkerNames(s)}${s.date ? `\n${s.date} (${ago})` : ""}`;
                 li.appendChild(title);
                 li.appendChild(meta);
                 li.appendChild(chips);
@@ -378,21 +449,32 @@ function renderTripsList() {
 /* ====== Stats + avatars with progress pies ====== */
 function computeStats() {
     const perWalker = {
-        charlie: { name: "Charlie", miles: 0, sections: 0, img: "images/charlie.jpg" },
-        olly: { name: "Olly", miles: 0, sections: 0, img: "images/olly.jpg" },
-        dad: { name: "Dad", miles: 0, sections: 0, img: "images/dad.jpg" },
+        charlie: { name: "Charlie", miles: 0, sections: 0, img: "images/charlie.jpg", _iv: [] },
+        olly: { name: "Olly", miles: 0, sections: 0, img: "images/olly.jpg", _iv: [] },
+        dad: { name: "Dad", miles: 0, sections: 0, img: "images/dad.jpg", _iv: [] },
     };
-    let overallMiles = 0;
-    let overallSections = 0;
+    const allIntervals = [];
 
     TRIPS.forEach(trip => {
         trip.sections.forEach(s => {
-            overallMiles += s.miles; overallSections++;
-            if (s.charlie) { perWalker.charlie.miles += s.miles; perWalker.charlie.sections++; }
-            if (s.olly) { perWalker.olly.miles += s.miles; perWalker.olly.sections++; }
-            if (s.dad) { perWalker.dad.miles += s.miles; perWalker.dad.sections++; }
+            allIntervals.push([s.startKm, s.endKm]);
+            if (s.charlie) { perWalker.charlie.sections++; perWalker.charlie._iv.push([s.startKm, s.endKm]); }
+            if (s.olly) { perWalker.olly.sections++; perWalker.olly._iv.push([s.startKm, s.endKm]); }
+            if (s.dad) { perWalker.dad.sections++; perWalker.dad._iv.push([s.startKm, s.endKm]); }
         });
     });
+
+    // Unique miles per walker (dedup overlapping path segments)
+    Object.values(perWalker).forEach(w => {
+        const merged = mergeIntervals(w._iv);
+        w.miles = merged.reduce((sum, [s, e]) => sum + (e - s), 0) * 0.621371;
+        delete w._iv;
+    });
+
+    // Unique overall miles (dedup all walkers combined)
+    const overallMerged = mergeIntervals(allIntervals);
+    const overallMiles = overallMerged.reduce((sum, [s, e]) => sum + (e - s), 0) * 0.621371;
+    const overallSections = allIntervals.length;
 
     return { perWalker, overallMiles, overallSections };
 }
@@ -425,16 +507,18 @@ function renderOverall(stats) {
 let currentId = null;
 function focusSection(id) {
     currentId = id;
-    console.log(id);
     const entry = LINES.get(id);
     if (!entry) return;
-    map.fitBounds(entry.bounds.pad(0.25));
-    scheduleRefreshOffsets();
-    // keep the sheet visible on mobile
-    if (window.matchMedia("(max-width: 860px)").matches) {
+    const isMobile = window.matchMedia("(max-width: 860px)").matches;
+    if (isMobile) {
         sidebar.classList.remove("closed");
-        setTimeout(() => map.invalidateSize(), 200);
+        const sidebarH = sidebar.offsetHeight;
+        map.fitBounds(entry.bounds.pad(0.25), { paddingBottomLeft: [0, sidebarH] });
+        setTimeout(() => map.invalidateSize(), 260);
+    } else {
+        map.fitBounds(entry.bounds.pad(0.25));
     }
+    scheduleRefreshOffsets();
     highlightInSidebar(id);
 }
 
@@ -498,7 +582,6 @@ openBtn.addEventListener("click", () => {
     }
 
     // keep three lines separated at any zoom/pan (pixel-space offsets)
-    map.on("zoom", scheduleRefreshOffsets);
     map.on("zoomend", scheduleRefreshOffsets);
     map.on("moveend", scheduleRefreshOffsets);
     scheduleRefreshOffsets();
