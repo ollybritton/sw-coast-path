@@ -29,14 +29,24 @@
 
         <!-- compact KPIs -->
         <div id="overall-stats" class="overall-stats"></div>
+
+        <!-- shows when a single walker is pinned -->
+        <div id="active-filter" class="active-filter" hidden></div>
       </header>
 
       <!-- Single merged panel -->
       <section class="tab-panel active">
         <div class="filters">
-          <label class="mr3">
+          <label class="filter-item">
             <input id="filter-videos" type="checkbox" />
-            <span class="ml1" id="video-toggle-label">Show sections with videos only</span>
+            <span class="ml1" id="video-toggle-label">Videos only</span>
+          </label>
+          <label class="filter-item sort-control">
+            <span class="mr1">Sort</span>
+            <select id="sort-mode">
+              <option value="trip">By trip</option>
+              <option value="recent">Most recent</option>
+            </select>
           </label>
           <span class="silver f6" id="sections-count"></span>
         </div>

@@ -13,10 +13,18 @@ const sectionsCountEl = document.getElementById("sections-count");
 const filterVideosEl = document.getElementById("filter-videos");
 const overallStatsEl = document.getElementById("overall-stats");
 const walkersAvatarsEl = document.getElementById("walkers-avatars");
+const sortModeEl = document.getElementById("sort-mode");
+const activeFilterEl = document.getElementById("active-filter");
 
 let rafRefresh = null;
 let lastCorridor = null;
 let hoverPopup = null;
+
+/* ====== Walker filtering state ====== */
+const WALKER_NAMES = { charlie: "Charlie", olly: "Olly", dad: "Dad" };
+let selectedWalker = null;   // pinned filter (null = everyone); drives list + stats + map
+let hoverWalker = null;      // transient hover preview; drives map only
+let sortMode = "trip";       // "trip" (grouped) | "recent" (flat, newest first)
 
 /* ====== MAP ====== */
 const canvasRenderer = L.canvas({ padding: 0.5 });
@@ -175,6 +183,7 @@ let TRIPS = [];                 // [{ name, year, sections:[...] }]
 let YEAR_GROUPS = [];           // [{ year, trips:[...] }]
 let SECTIONS_MAP = new Map();   // id -> section object
 let LINES = new Map();          // id -> { byWalker, bounds }
+let MARKERS = new Map();        // id -> [L.marker, ...] (start, and end if fixEnd)
 let SECTION_ELEMENT = new Map();// id -> <li> element
 
 function buildFromTrips() {
@@ -338,7 +347,84 @@ function scheduleRefreshOffsets() {
     });
 }
 
+/* ====== Walker filtering (hover = map preview, click = pin everything) ====== */
+function effectiveMapWalker() { return hoverWalker || selectedWalker; }
+
+function toggleLayer(layer, show) {
+    if (show && !map.hasLayer(layer)) layer.addTo(map);
+    else if (!show && map.hasLayer(layer)) map.removeLayer(layer);
+}
+
+/* Show only the effective walker's corridors + markers on the map (null = all). */
+function applyMapFilter() {
+    const who = effectiveMapWalker();
+    LINES.forEach(entry => {
+        Object.entries(entry.byWalker).forEach(([w, layer]) => {
+            toggleLayer(layer, !who || w === who);
+        });
+    });
+    MARKERS.forEach((markers, id) => {
+        const sec = SECTIONS_MAP.get(id);
+        const show = !who || (sec && !!sec[who]);
+        markers.forEach(mk => toggleLayer(mk, show));
+    });
+    scheduleRefreshOffsets();
+}
+
+function updateAvatarStates() {
+    const active = effectiveMapWalker();
+    walkersAvatarsEl.querySelectorAll(".avatar-wrap").forEach(el => {
+        const w = el.dataset.walker;
+        el.classList.toggle("selected", selectedWalker === w);
+        el.classList.toggle("dimmed", !!active && active !== w);
+    });
+}
+
+function updateActiveFilterChip() {
+    if (!selectedWalker) {
+        activeFilterEl.hidden = true;
+        activeFilterEl.innerHTML = "";
+        return;
+    }
+    activeFilterEl.hidden = false;
+    activeFilterEl.innerHTML =
+        `<span class="af-dot ${selectedWalker}"></span>` +
+        `<span>Showing ${WALKER_NAMES[selectedWalker]}'s walks</span>` +
+        `<button class="af-clear" type="button" aria-label="Clear filter">✕</button>`;
+    activeFilterEl.querySelector(".af-clear").addEventListener("click", () => setSelectedWalker(null));
+}
+
+/* Refresh the sidebar (list + counts + stats) for the current pinned walker.
+   Avatar pies show each walker's overall total, which selection never changes,
+   so we only re-toggle their selected/dimmed classes rather than rebuild them. */
+function refreshSidebar() {
+    renderTripsList();
+    renderOverall(computeStats());
+    updateAvatarStates();
+    updateActiveFilterChip();
+}
+
+function setHoverWalker(who) {
+    if (hoverWalker === who) return;
+    hoverWalker = who;
+    applyMapFilter();
+    updateAvatarStates();
+}
+
+function setSelectedWalker(who) {
+    // toggle off if re-selecting the same person
+    selectedWalker = (who && selectedWalker === who) ? null : who;
+    applyMapFilter();
+    refreshSidebar();
+}
+
 /* ====== UI (year groups → trips → sections) ====== */
+function sectionVisible(s) {
+    const passVideo = !filterVideosEl.checked || (s.videoLink !== "" && s.videoLink !== "none");
+    const passWalker = !selectedWalker || !!s[selectedWalker];
+    return passVideo && passWalker;
+}
+
 function sectionDotsHTML(s) {
     const dots = [];
     if (s.charlie) dots.push('<span class="dot charlie" title="Charlie"></span>');
@@ -347,101 +433,116 @@ function sectionDotsHTML(s) {
     return `<div class="dotrow">${dots.join("")}</div>`;
 }
 
+/* Build one section <li>; showTrip appends the trip name in the flat view. */
+function makeSectionLi(s, showTrip = false) {
+    const li = document.createElement("li");
+    li.className = "section-item";
+    li.dataset.id = s.id;
+
+    const title = document.createElement("div");
+    title.className = "section-title";
+    title.textContent = `${s.start} → ${s.end}`;
+
+    const meta = document.createElement("div");
+    meta.className = "section-meta";
+    const milesStr = `${s.miles.toFixed(1)} mi`;
+    const ago = s.date ? relativeTime(s.date) : "";
+    let metaText = s.date ? `${milesStr} • ${ago}` : milesStr;
+    if (showTrip && s.tripName) metaText += ` • ${s.tripName}`;
+    meta.textContent = metaText;
+
+    const chips = document.createElement("div");
+    chips.className = "section-chips";
+
+    if (!s.videoLink) {
+        const span = document.createElement("span");
+        span.className = "badge novideo";
+        span.textContent = "Unedited";
+        chips.appendChild(span);
+    } else if (s.videoLink === "none") {
+        const span = document.createElement("span");
+        span.className = "badge novideo";
+        span.textContent = "No video";
+        chips.appendChild(span);
+    } else {
+        const a = document.createElement("a");
+        a.className = "badge video";
+        a.href = s.videoLink; a.target = "_blank"; a.rel = "noopener";
+        a.textContent = "Video ▶";
+        chips.appendChild(a);
+    }
+    chips.insertAdjacentHTML("beforeend", sectionDotsHTML(s));
+
+    li.style.borderLeftColor = ageColor(s.date);
+    li.title = `${s.tripName}\n${walkerNames(s)}${s.date ? `\n${s.date} (${ago})` : ""}`;
+    li.appendChild(title);
+    li.appendChild(meta);
+    li.appendChild(chips);
+    li.addEventListener("click", () => focusSection(s.id));
+
+    SECTION_ELEMENT.set(s.id, li);
+    return li;
+}
+
 function renderTripsList() {
-    const videoOnly = filterVideosEl.checked;
     sectionsListEl.innerHTML = "";
     SECTION_ELEMENT.clear();
 
     let count = 0;
 
-    YEAR_GROUPS.forEach(group => {
+    if (sortMode === "recent") {
+        // Flat list across all trips, newest first
+        const all = [];
+        TRIPS.forEach(trip => trip.sections.forEach(s => { if (sectionVisible(s)) all.push(s); }));
+        all.sort((a, b) => (b.date || "").localeCompare(a.date || ""));
 
-        let nonEmpty = group.trips.some(trip => trip.sections.some(s => (videoOnly && s.videoLink !== "" && s.videoLink !== "none") || !videoOnly));
+        const ul = document.createElement("ul");
+        ul.className = "trip-sections flat";
+        all.forEach(s => { count++; ul.appendChild(makeSectionLi(s, true)); });
+        sectionsListEl.appendChild(ul);
+    } else {
+        // Grouped by year → trip
+        YEAR_GROUPS.forEach(group => {
+            if (!group.trips.some(trip => trip.sections.some(sectionVisible))) return;
 
-        // Skip years with no trips
-        if (!nonEmpty) {
-            return;
-        }
+            const wrap = document.createElement("div");
+            wrap.className = "year-group";
+            const h = document.createElement("div");
+            h.className = "year-heading";
+            h.textContent = group.year;
+            wrap.appendChild(h);
 
-        // year heading
-        const wrap = document.createElement("div");
-        wrap.className = "year-group";
-        const h = document.createElement("div");
-        h.className = "year-heading";
-        h.textContent = group.year;
-        wrap.appendChild(h);
+            group.trips.forEach(trip => {
+                const children = trip.sections.filter(sectionVisible);
+                if (!children.length) return;
 
-        group.trips.forEach(trip => {
-            const children = trip.sections.filter(s => (videoOnly && s.videoLink !== "" && s.videoLink !== "none") || !videoOnly);
-            if (!children.length) return;
+                const groupDiv = document.createElement("div");
+                groupDiv.className = "trip-group";
 
-            const groupDiv = document.createElement("div");
-            groupDiv.className = "trip-group";
+                const header = document.createElement("div");
+                header.className = "trip-header";
+                header.textContent = trip.name;
+                groupDiv.appendChild(header);
 
-            const header = document.createElement("div");
-            header.className = "trip-header";
-            header.textContent = trip.name;
-            groupDiv.appendChild(header);
+                const ul = document.createElement("ul");
+                ul.className = "trip-sections";
 
-            const ul = document.createElement("ul");
-            ul.className = "trip-sections";
+                children.forEach(s => { count++; ul.appendChild(makeSectionLi(s)); });
 
-            children.forEach(s => {
-                count++;
-
-                const li = document.createElement("li");
-                li.className = "section-item";
-                li.dataset.id = s.id;
-
-                const title = document.createElement("div");
-                title.className = "section-title";
-                title.textContent = `${s.start} → ${s.end}`;
-
-                const meta = document.createElement("div");
-                meta.className = "section-meta";
-                const milesStr = `${s.miles.toFixed(1)} mi`;
-                const ago = s.date ? relativeTime(s.date) : "";
-                meta.textContent = s.date ? `${milesStr} • ${ago}` : milesStr;
-
-                const chips = document.createElement("div");
-                chips.className = "section-chips";
-
-                if (!s.videoLink) {
-                    const span = document.createElement("span");
-                    span.className = "badge novideo";
-                    span.textContent = "Unedited";
-                    chips.appendChild(span);
-                } else if (s.videoLink === "none") {
-                    const span = document.createElement("span");
-                    span.className = "badge novideo";
-                    span.textContent = "No video";
-                    chips.appendChild(span);
-                } else {
-                    const a = document.createElement("a");
-                    a.className = "badge video";
-                    a.href = s.videoLink; a.target = "_blank"; a.rel = "noopener";
-                    a.textContent = "Video ▶";
-                    chips.appendChild(a);
-                }
-                chips.insertAdjacentHTML("beforeend", sectionDotsHTML(s));
-
-                li.style.borderLeftColor = ageColor(s.date);
-                li.title = `${s.tripName}\n${walkerNames(s)}${s.date ? `\n${s.date} (${ago})` : ""}`;
-                li.appendChild(title);
-                li.appendChild(meta);
-                li.appendChild(chips);
-                li.addEventListener("click", () => focusSection(s.id));
-
-                SECTION_ELEMENT.set(s.id, li);
-                ul.appendChild(li);
+                groupDiv.appendChild(ul);
+                wrap.appendChild(groupDiv);
             });
 
-            groupDiv.appendChild(ul);
-            wrap.appendChild(groupDiv);
+            sectionsListEl.appendChild(wrap);
         });
+    }
 
-        sectionsListEl.appendChild(wrap);
-    });
+    if (selectedWalker && count === 0) {
+        const empty = document.createElement("p");
+        empty.className = "silver tiny";
+        empty.textContent = `No sections for ${WALKER_NAMES[selectedWalker]} match this filter.`;
+        sectionsListEl.appendChild(empty);
+    }
 
     sectionsCountEl.textContent = `${count} section${count === 1 ? "" : "s"}`;
 }
@@ -485,26 +586,53 @@ function renderAvatars(stats) {
         const pct = Math.min(100, (w.miles / ROUTE_MILES) * 100);
         const wrap = document.createElement("div");
         wrap.className = "avatar-wrap";
+        wrap.dataset.walker = key;
+        wrap.setAttribute("role", "button");
+        wrap.setAttribute("tabindex", "0");
+        wrap.title = `Show only ${w.name}'s sections (click to pin)`;
         wrap.innerHTML = `
       <div class="avatar-pie" style="--pct:${pct}; --color:${rgba(key, 1)};">
         <img src="${w.img}" alt="${w.name}">
       </div>
       <div class="avatar-label">${w.name} · ${pct.toFixed(0)}%</div>
     `;
+        wrap.addEventListener("mouseenter", () => setHoverWalker(key));
+        wrap.addEventListener("mouseleave", () => setHoverWalker(null));
+        wrap.addEventListener("click", () => setSelectedWalker(key));
+        wrap.addEventListener("keydown", (e) => {
+            if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setSelectedWalker(key); }
+        });
         walkersAvatarsEl.appendChild(wrap);
     });
 }
 
 function renderOverall(stats) {
+    const w = selectedWalker ? stats.perWalker[selectedWalker] : null;
+    const doneMiles = w ? w.miles : stats.overallMiles;
+    const doneSections = w ? w.sections : stats.overallSections;
+    const doneLabel = w ? `${w.name}'s miles` : "Done miles";
+    const secLabel = w ? `${w.name}'s sections` : "Done sections";
     overallStatsEl.innerHTML = `
   <div class="kpi"><div class="label">Total miles</div><div class="value">${ROUTE_MILES.toFixed(1)} mi</div></div>
-    <div class="kpi"><div class="label">Done miles</div><div class="value">${stats.overallMiles.toFixed(1)} mi</div></div>
-    <div class="kpi"><div class="label">Done sections</div><div class="value">${stats.overallSections}</div></div>
+    <div class="kpi"><div class="label">${doneLabel}</div><div class="value">${doneMiles.toFixed(1)} mi</div></div>
+    <div class="kpi"><div class="label">${secLabel}</div><div class="value">${doneSections}</div></div>
   `;
 }
 
 /* ====== Focus/selection ====== */
 let currentId = null;
+
+/* fitBounds that keeps content clear of the mobile bottom sheet when it's open. */
+function fitBoundsAware(bounds, padFactor = 0.2) {
+    const isMobile = window.matchMedia("(max-width: 860px)").matches;
+    const sheetOpen = isMobile && !sidebar.classList.contains("closed");
+    if (sheetOpen) {
+        map.fitBounds(bounds.pad(padFactor), { paddingBottomLeft: [0, sidebar.offsetHeight] });
+    } else {
+        map.fitBounds(bounds.pad(padFactor));
+    }
+}
+
 function focusSection(id) {
     currentId = id;
     const entry = LINES.get(id);
@@ -512,12 +640,9 @@ function focusSection(id) {
     const isMobile = window.matchMedia("(max-width: 860px)").matches;
     if (isMobile) {
         sidebar.classList.remove("closed");
-        const sidebarH = sidebar.offsetHeight;
-        map.fitBounds(entry.bounds.pad(0.25), { paddingBottomLeft: [0, sidebarH] });
         setTimeout(() => map.invalidateSize(), 260);
-    } else {
-        map.fitBounds(entry.bounds.pad(0.25));
     }
+    fitBoundsAware(entry.bounds, 0.25);
     scheduleRefreshOffsets();
     highlightInSidebar(id);
 }
@@ -554,12 +679,16 @@ openBtn.addEventListener("click", () => {
                 iconUrl: MARKER_ICON_URL, shadowUrl: MARKER_SHADOW_URL,
                 iconSize: [20, 32], iconAnchor: [10, 32], popupAnchor: [1, -28], shadowSize: [32, 32],
             });
+            const marks = [];
             const s = L.marker(d.startCoords, { title: d.start, icon }).addTo(map);
             s.bindPopup(d.start);
+            marks.push(s);
             if (d.fixEnd) {
                 const e = L.marker(d.endCoords, { title: d.end, icon }).addTo(map);
                 e.bindPopup(d.end);
+                marks.push(e);
             }
+            MARKERS.set(d.id, marks);
         });
     });
 
@@ -568,9 +697,11 @@ openBtn.addEventListener("click", () => {
     const stats = computeStats();
     renderAvatars(stats);      // images + progress pies
     renderOverall(stats);
+    updateAvatarStates();
     filterVideosEl.addEventListener("change", renderTripsList);
+    sortModeEl.addEventListener("change", () => { sortMode = sortModeEl.value; renderTripsList(); });
 
-    // Fit map to all drawn bounds
+    // Fit map to all drawn bounds (account for the bottom sheet on mobile)
     if (LINES.size) {
         const groupBounds = Array.from(LINES.values())
             .reduce((acc, { bounds }) => acc
@@ -578,7 +709,7 @@ openBtn.addEventListener("click", () => {
                 : bounds.pad(0) // ← returns a NEW LatLngBounds
                 , null);
 
-        if (groupBounds && groupBounds.isValid()) map.fitBounds(groupBounds.pad(0.2));
+        if (groupBounds && groupBounds.isValid()) fitBoundsAware(groupBounds, 0.2);
     }
 
     // keep three lines separated at any zoom/pan (pixel-space offsets)

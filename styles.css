@@ -62,7 +62,33 @@ body { margin: 0; color: var(--ink); background: var(--bg); }
 .avatar-label{
   text-align:center; margin-top:6px; font-size:.9rem; font-weight:600;
 }
-.avatar-wrap{ display:flex; flex-direction:column; align-items:center; }
+.avatar-wrap{
+  display:flex; flex-direction:column; align-items:center;
+  cursor:pointer; outline:none;
+  transition: opacity .15s ease, transform .15s ease;
+}
+.avatar-wrap:hover{ transform: translateY(-1px); }
+.avatar-wrap.dimmed{ opacity:.32; }
+.avatar-wrap.selected .avatar-label{ font-weight:800; }
+.avatar-wrap.selected .avatar-pie{ box-shadow: 0 0 0 3px rgba(17,17,17,.12); border-radius:999px; }
+.avatar-wrap:focus-visible .avatar-pie{ box-shadow: 0 0 0 3px rgba(59,130,246,.55); border-radius:999px; }
+
+/* "Showing X's walks" chip when a walker is pinned */
+.active-filter{
+  align-items:center; gap:8px; margin:6px 0 2px; padding:5px 10px;
+  border:1px solid var(--border); border-radius:999px; background:var(--bg-elev);
+  font-size:.85rem; width:fit-content;
+}
+.active-filter:not([hidden]){ display:flex; }
+.active-filter .af-dot{ width:10px; height:10px; border-radius:999px; display:inline-block; }
+.active-filter .af-dot.charlie{ background:var(--color-charlie); }
+.active-filter .af-dot.olly{ background:var(--color-olly); }
+.active-filter .af-dot.dad{ background:var(--color-dad); }
+.active-filter .af-clear{
+  border:none; background:transparent; cursor:pointer; font-size:.9rem; line-height:1;
+  color:var(--muted); padding:2px 4px; border-radius:6px;
+}
+.active-filter .af-clear:hover{ background:rgba(0,0,0,.06); color:var(--ink); }
 
 /* Panels */
 .tab-panel{ display:block; }
@@ -132,7 +158,16 @@ body { margin: 0; color: var(--ink); background: var(--bg); }
 .kpi .value{ font-weight:700; font-size:1.05rem; margin-top:2px; }
 
 /* Filters */
-.filters{ display:flex; align-items:center; justify-content:space-between; margin:10px 0 8px; }
+.filters{ display:flex; align-items:center; flex-wrap:wrap; gap:10px 14px; margin:10px 0 8px; }
+.filter-item{ display:inline-flex; align-items:center; user-select:none; }
+.sort-control select{
+  font: inherit; padding:2px 6px; border:1px solid var(--border);
+  border-radius:8px; background:#fff; cursor:pointer;
+}
+.filters #sections-count{ margin-left:auto; }
+
+/* Flat "most recent" list has no trip-group wrapper */
+.trip-sections.flat{ padding:0; }
 
 /* Mobile bottom sheet behavior */
 .open-sidebar{
