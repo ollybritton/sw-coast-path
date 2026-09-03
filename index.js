@@ -197,7 +197,16 @@ function buildFromTrips() {
             const tookPart = !!(item.charlie || item.olly || item.dad);
             if (!tookPart) return;
 
-            const { latlngs, km, startKm, endKm } = sliceOnRoute(item.startCoords, item.endCoords);
+            const sliced = sliceOnRoute(item.startCoords, item.endCoords);
+            const { startKm, endKm } = sliced;
+            let { latlngs, km } = sliced;
+
+            // Prefer the walker's own recorded GPX track over the sliced reference route, when we have one.
+            if (Array.isArray(item.track) && item.track.length >= 2) {
+                latlngs = item.track;
+                km = turf.length(turf.lineString(item.track.map(toLngLat)), { units: "kilometers" });
+            }
+
             const miles = km * 0.621371;
             const id = makeId(item);
             const year = item.date ? new Date(item.date).getFullYear() : null;
@@ -280,6 +289,23 @@ function separationPX() {
     return getWalkerWeight() * 2 / getMetersPerPixel(map);
 }
 
+/* Coarsen a section's line to match current zoom: full GPX detail up close,
+   simplified (like the old route-sliced lines) when zoomed out, so dense
+   personal tracks don't look noisy/jittery at low zoom. */
+function displayLatLngsForZoom(sec) {
+    const latlngs = sec.latlngs;
+    if (!latlngs || latlngs.length < 3) return latlngs;
+
+    const mpp = getMetersPerPixel(map);
+    const tolM = Math.min(80, Math.max(3, mpp * 3));
+    if (tolM <= 3) return latlngs; // already at (or finer than) stored precision
+
+    const line = turf.lineString(latlngs.map(([lat, lon]) => [lon, lat]));
+    const simplified = turf.simplify(line, { tolerance: metersToDegrees(tolM), highQuality: false, mutate: false });
+    const out = coordsToLatLngs(simplified.geometry.coordinates);
+    return out.length >= 2 ? out : latlngs;
+}
+
 
 
 function drawSection(section) {
@@ -288,10 +314,11 @@ function drawSection(section) {
     const offsets = { charlie: -1, olly: 0, dad: +1 };
     const walkers = ["charlie", "olly", "dad"];
     const px = separationPX();
+    const displayLatLngs = displayLatLngsForZoom(section);
 
     walkers.forEach(w => {
         if (!section[w]) return;
-        const offLatLngs = offsetByPixels(section.latlngs, offsets[w] * px);
+        const offLatLngs = offsetByPixels(displayLatLngs, offsets[w] * px);
         perWalker[w] = makeWalkerLine(offLatLngs, w, section.year);
     });
 
@@ -339,8 +366,9 @@ function scheduleRefreshOffsets() {
             if (!entry) return;
 
             const offsets = { charlie: -1, olly: 0, dad: +1 };
+            const displayLatLngs = displayLatLngsForZoom(sec);
             Object.entries(entry.byWalker).forEach(([w, layer]) => {
-                layer.setLatLngs(offsetByPixels(sec.latlngs, offsets[w] * pxSep));
+                layer.setLatLngs(offsetByPixels(displayLatLngs, offsets[w] * pxSep));
                 layer.setCorridor(corridorMeters);     // <-- the important bit
             });
         });
@@ -522,6 +550,7 @@ function renderTripsList() {
                 const header = document.createElement("div");
                 header.className = "trip-header";
                 header.textContent = trip.name;
+                header.addEventListener("click", () => focusTrip(children));
                 groupDiv.appendChild(header);
 
                 const ul = document.createElement("ul");
@@ -654,6 +683,35 @@ function highlightInSidebar(id) {
         el.classList.add("active");
         el.scrollIntoView({ behavior: "smooth", block: "center" });
     }
+}
+
+/* Focus every section belonging to one trip (triggered by clicking its trip-header). */
+function focusTrip(sections) {
+    const ids = sections.map(s => s.id).filter(id => LINES.has(id));
+    if (!ids.length) return;
+    currentId = null;
+
+    let bounds = null;
+    ids.forEach(id => {
+        const b = LINES.get(id).bounds;
+        bounds = bounds ? bounds.extend(b) : L.latLngBounds(b.getSouthWest(), b.getNorthEast());
+    });
+
+    const isMobile = window.matchMedia("(max-width: 860px)").matches;
+    if (isMobile) {
+        sidebar.classList.remove("closed");
+        setTimeout(() => map.invalidateSize(), 260);
+    }
+    fitBoundsAware(bounds, 0.25);
+    scheduleRefreshOffsets();
+
+    SECTION_ELEMENT.forEach(el => el.classList.remove("active"));
+    ids.forEach(id => {
+        const el = SECTION_ELEMENT.get(id);
+        if (el) el.classList.add("active");
+    });
+    const firstEl = SECTION_ELEMENT.get(ids[0]);
+    if (firstEl) firstEl.scrollIntoView({ behavior: "smooth", block: "center" });
 }
 
 /* ====== Mobile toggle ====== */
