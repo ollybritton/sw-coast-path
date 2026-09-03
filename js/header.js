@@ -78,11 +78,13 @@ function updateAvatarStates() {
 
 /* ====== OVERALL PROGRESS (statement) and ROUTE COVERAGE BAR ====== */
 
-/* Display-only gap bridging: the Padstow-Rock ferry crossing (and route-snapping
-   slivers) leave hairline breaks in the bar that aren't real "unwalked" stretches.
-   Bridge anything shorter than this when building the bar. Mileage figures
-   (computeStats) are untouched and stay exact. */
-const COVERAGE_GAP_TOLERANCE_KM = 1.5;
+/* Display-only gap bridging: ferry crossings leave breaks in the bar (and the
+   overview map) that aren't real "unwalked" stretches: Padstow-Rock across the
+   Camel is about 1 km along the route line, Bigbury-on-Sea to Bantham across
+   the Avon about 2.4 km. Bridge anything shorter than this; the next-smallest
+   real gap in the data is over 50 km. Mileage figures (computeStats) are
+   untouched and stay exact. */
+const COVERAGE_GAP_TOLERANCE_KM = 3;
 
 function mergeIntervalsWithTolerance(intervals, toleranceKm) {
     if (!intervals.length) return [];
