@@ -1,0 +1,86 @@
+/* ====== MOBILE: the bottom sheet and its drag handle (max-width: 860px) ======
+   #sidebar becomes a bottom sheet with three states — sheet-peek (~64px),
+   sheet-half (~45vh) and sheet-open (~85vh) — driven by js/mobile.js through
+   the --sheet-h custom property. ".closed" is kept below as a pure-CSS alias
+   of "peek" for any code that still toggles it directly. The drag handle is a
+   <button> that js/mobile.js inserts as the sheet's first child. */
+
+.sheet-handle{
+  display: none; /* shown only ≤860px, below */
+}
+
+@media (max-width: 860px){
+  .layout{ grid-template-columns: 1fr; }
+
+  .sidebar{
+    position: fixed; left: 0; right: 0; bottom: 0;
+    display: flex; flex-direction: column;
+    height: var(--sheet-h, 64px);
+    min-height: 64px;
+    max-height: 90vh;
+    overflow: hidden;
+    border-right: none;
+    border-top: 1px solid var(--rule);
+    border-radius: calc(var(--radius) * 2) calc(var(--radius) * 2) 0 0;
+    box-shadow: 0 -10px 28px rgba(20, 30, 28, .16);
+    background: var(--surface);
+    padding: 12px;
+    z-index: 1100; /* above Leaflet's controls (1000) so they never overlay the sheet */
+    transition: height .28s cubic-bezier(.22, .61, .36, 1);
+  }
+  .sidebar.dragging{ transition: none; }
+
+  .sidebar.sheet-peek{ --sheet-h: 64px; }
+  .sidebar.sheet-half{ --sheet-h: 45vh; }
+  .sidebar.sheet-open{ --sheet-h: 85vh; }
+  .sidebar.closed{ --sheet-h: 64px; } /* alias of sheet-peek */
+
+  /* Drag handle: bleeds through the sheet's own padding so the grabber sits
+     flush with the sheet's top edge (and gets clipped to its rounded corners
+     by the sheet's own overflow:hidden). */
+  .sheet-handle{
+    display: flex; align-items: center; justify-content: center;
+    flex: 0 0 auto;
+    width: calc(100% + 24px);
+    margin: -12px -12px 0;
+    min-height: 44px;
+    padding: 10px 0;
+    background: transparent; border: none;
+    cursor: grab; touch-action: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .sheet-handle:active{ cursor: grabbing; }
+  .sheet-handle:focus-visible{
+    outline: 2px solid var(--accent);
+    outline-offset: -3px;
+    border-radius: var(--radius);
+  }
+  .sheet-grabber{
+    width: 36px; height: 4px; border-radius: 999px;
+    background: var(--rule-strong);
+  }
+
+  .sidebar-header{ flex: 0 0 auto; padding-top: 0; } /* the handle provides the top inset on phones */
+  .tab-panel{
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* ---- Compact header, so "half" still leaves room for walk rows ---- */
+  .intro{ display: none; }
+
+  .wordmark{ font-size: 18px; }
+
+  /* Header sizing on phones lives in css/header.css (@media block). */
+
+  .filters{ margin: 5px 0 3px; }
+  .sections-list{ margin-top: 0; }
+  .year-heading{ padding: 4px 4px 2px; }
+  .trip-header{ padding: 10px 12px 4px; }
+}
+
+@media (max-width: 860px) and (prefers-reduced-motion: reduce){
+  .sidebar{ transition: none; }
+}

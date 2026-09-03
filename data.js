@@ -1,15 +1,3 @@
-const MARKER_ICON_URL =
-    "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-black.png";
-
-const MARKER_SHADOW_URL =
-    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png";
-
-const COLORS = {
-    olly: "blue",
-    dad: "green",
-    charlie: "red",
-};
-
 const HIKE_DATA = [
     {
         name: "First trip starting from the north end",

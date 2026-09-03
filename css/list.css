@@ -1,0 +1,295 @@
+/* ====== LIST: filters row, year headings, trip headings, walk rows ====== */
+
+/* Panels */
+.tab-panel{ display:block; }
+
+.sections-list{ margin-top:6px; }
+
+/* ---- Loading skeleton ---- */
+.list-skeleton{ display:flex; flex-direction:column; padding-top:10px; }
+.skeleton-row{
+  display:flex; align-items:center; justify-content:space-between; gap:12px;
+  padding:13px 4px; border-bottom:1px solid var(--rule);
+}
+.skeleton-bar{
+  display:block; height:11px; border-radius:4px;
+  background: var(--rule);
+  animation: skeleton-pulse 1.4s ease-in-out infinite;
+}
+.skeleton-bar.w60{ width:60%; }
+.skeleton-bar.w45{ width:45%; }
+.skeleton-bar.w70{ width:70%; }
+.skeleton-bar.w15{ width:15%; flex-shrink:0; }
+@keyframes skeleton-pulse{
+  0%, 100% { opacity:.45; }
+  50% { opacity:.9; }
+}
+@media (prefers-reduced-motion: reduce){
+  .skeleton-bar{ animation:none; }
+}
+
+/* ---- Empty state ---- */
+.list-empty{
+  color: var(--muted);
+  font-size:.9rem;
+  text-align:center;
+  padding:28px 8px;
+}
+
+/* ---- Year groups ----
+   The heading reads as a heading for the trips below it (display face, ink
+   colour, sitting tight above the first panel) rather than a muted section
+   divider. Sticky is kept: as the year's own trip panels scroll past beneath
+   it, only that year's panels are ever visible under it, so the "this heading
+   owns what's below it" reading holds even mid-scroll — it behaves like the
+   sticky section headers in a contacts app rather than a floating label. */
+.year-group{ margin:0; }
+.year-group + .year-group{ margin-top:24px; }
+.year-heading{
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  margin:0 0 10px;
+  padding:14px 2px 6px;
+  background: var(--ground);
+  font-family: var(--font-display);
+  font-size:1.15rem;
+  font-weight:600;
+  line-height:1.25;
+  color: var(--ink);
+}
+.year-group:first-child .year-heading{ padding-top:0; }
+
+/* ---- Trips ----
+   Each trip is one white panel on the grey sidebar ground: a hairline border,
+   the radius token, heading + summary inside its top, walk rows inside
+   separated only by hairlines (one level of container — rows are not their
+   own cards). overflow:hidden keeps row hover/active backgrounds clipped to
+   the panel's rounded corners. */
+.trip-block{
+  margin:0;
+  background: var(--surface);
+  border:1px solid var(--rule);
+  border-radius: var(--radius);
+  overflow:hidden;
+}
+.trip-block + .trip-block{ margin-top:14px; }
+
+.trip-header{
+  display:block;
+  padding:14px 14px 10px;
+  cursor:pointer;
+}
+.trip-header:hover .trip-name{ color: var(--accent-ink); }
+.trip-header:focus-visible{
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+.trip-name{
+  margin:0 0 2px;
+  font-family: var(--font-display);
+  font-size:1.08rem;
+  font-weight:600;
+  line-height:1.25;
+  color: var(--ink);
+}
+.trip-meta{
+  margin:0;
+  color: var(--muted);
+  font-size:.82rem;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- Walk rows ---- */
+.walk-list{ list-style:none; margin:0; padding:0; }
+
+.walk-row{
+  position: relative;
+  scroll-margin-top: 48px; /* keep the sticky year heading off a row scrolled into view */
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  min-height:44px;
+  padding:10px 14px;
+  border-bottom:1px solid var(--rule);
+  cursor:pointer;
+}
+.walk-row:last-child{ border-bottom:none; }
+
+/* Title + date/miles as one block with a fixed gap, independent of how tall
+   .walk-marks is — this is what keeps every row's text looking the same
+   whether or not it has a Watch link (see js/list.js, makeSectionLi). */
+.walk-text{
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+  min-width:0;
+}
+.walk-title{
+  font-weight:600;
+  font-size:.96rem;
+  color: var(--ink);
+}
+.walk-meta{
+  color: var(--muted);
+  font-size:.82rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.walk-row:hover{ background: var(--ground); }
+.walk-row:focus-visible{
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+.walk-row.active{ background: var(--accent-soft); }
+.walk-row.active::before{
+  content:"";
+  position:absolute;
+  left:0; top:0; bottom:0;
+  width:3px;
+  background: var(--accent);
+}
+
+/* ---- Walker marks + video link ---- */
+.walk-marks{
+  flex:0 0 auto;
+  align-self:center;
+  display:flex;
+  flex-direction:column;
+  align-items:flex-end;
+  gap:6px;
+}
+
+/* Quiet status pill shown instead of the Watch link when there's no video to
+   watch yet (videoLink === "") or there never will be one (=== "none"). */
+.video-pill{
+  display:inline-flex;
+  align-items:center;
+  min-height:36px;
+  padding:0 10px;
+  border-radius: var(--radius);
+  border:1px solid var(--rule);
+  color: var(--muted);
+  font-family: var(--font-body);
+  font-size:.75rem;
+  font-weight:600;
+  line-height:1;
+  background: transparent;
+}
+
+.watch-link{
+  display:inline-flex;
+  align-items:center;
+  gap:5px;
+  min-height:36px;
+  padding:0 10px;
+  border-radius: var(--radius);
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+  font-family: var(--font-body);
+  font-size:.75rem;
+  font-weight:600;
+  text-decoration:none;
+  line-height:1;
+}
+.watch-link:hover{ background: var(--accent); color: var(--surface); }
+.watch-link:focus-visible{
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+@media (pointer: coarse){
+  .watch-link{ min-height:44px; padding:0 12px; }
+  .video-pill{ min-height:44px; padding:0 12px; }
+}
+
+/* ---- Filters row: segmented control + video chip + count ---- */
+.filters{
+  display:flex;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:10px 10px;
+  margin:12px 0 10px;
+}
+.filters-native-hidden{ display:none; }
+
+.seg-control{
+  display:inline-flex;
+  border:1px solid var(--rule);
+  border-radius: var(--radius);
+  overflow:hidden;
+}
+.seg-btn{
+  font-family: var(--font-body);
+  font-size:.78rem;
+  color: var(--muted);
+  background: var(--surface);
+  border:none;
+  border-right:1px solid var(--rule);
+  padding:0 10px;
+  min-height:36px;
+  cursor:pointer;
+}
+.seg-btn:last-child{ border-right:none; }
+.seg-btn:hover{ background: var(--ground); }
+.seg-btn[aria-pressed="true"]{
+  background: var(--accent);
+  color: var(--surface);
+  font-weight:700;
+}
+.seg-btn[aria-pressed="true"]:hover{ background: var(--accent); }
+.seg-btn:focus-visible{
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+  position:relative;
+  z-index:1;
+}
+
+.chip-toggle{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  font-family: var(--font-body);
+  font-size:.78rem;
+  color: var(--muted);
+  background: var(--surface);
+  border:1px solid var(--rule);
+  border-radius:999px;
+  padding:0 12px;
+  min-height:36px;
+  cursor:pointer;
+}
+.chip-toggle:hover{ background: var(--ground); }
+.chip-toggle .chip-dot{
+  width:8px; height:8px;
+  border-radius:999px;
+  border:1.5px solid var(--muted);
+  background:transparent;
+}
+.chip-toggle[aria-pressed="true"]{
+  color: var(--accent-ink);
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  font-weight:600;
+}
+.chip-toggle[aria-pressed="true"] .chip-dot{
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.chip-toggle:focus-visible{
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+@media (pointer: coarse){
+  .seg-btn{ min-height:44px; padding:0 12px; }
+  .chip-toggle{ min-height:44px; padding:0 14px; }
+}
+
+.filters-count{
+  margin-left:auto;
+  color: var(--muted);
+  font-size:.8rem;
+  font-variant-numeric: tabular-nums;
+}

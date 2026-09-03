@@ -1,0 +1,109 @@
+/* ====== MAP: the Leaflet container and map-side UI (popups, controls) ====== */
+.map { height: 100vh; width: 100%; }
+
+.leaflet-container {
+    font-family: var(--font-body);
+}
+
+/* Hover popup on a walked corridor */
+.hover-popup .leaflet-popup-content-wrapper {
+    background: var(--surface);
+    color: var(--ink);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, .14);
+    font-size: .85rem;
+    padding: 2px 4px;
+}
+.hover-popup .leaflet-popup-content { margin: 8px 10px; line-height: 1.5; }
+.hover-popup .leaflet-popup-content a { color: var(--accent-ink); }
+.hover-popup .leaflet-popup-tip-container { display: none; }
+
+/* Tooltips: walk-boundary hover labels, and the two permanent path-end labels */
+.leaflet-tooltip {
+    font-family: var(--font-body);
+    background: var(--surface);
+    color: var(--ink);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, .1);
+    padding: 2px 7px;
+    font-size: .8rem;
+}
+.leaflet-tooltip-top:before { border-top-color: var(--rule); }
+.end-marker-tooltip { font-weight: 700; }
+
+/* Zoom control: hairline + surface, in step with the rest of the app */
+.leaflet-control-zoom a {
+    background: var(--surface);
+    color: var(--ink);
+    border-color: var(--rule) !important;
+}
+.leaflet-control-zoom a:hover { background: var(--accent-soft); }
+
+/* "Whole path" control: hidden until zoomed in past WHOLE_PATH_MIN_ZOOM (see map.js) */
+.whole-path-control { display: none; }
+.whole-path-control.visible { display: block; }
+.whole-path-btn {
+    font-family: var(--font-body);
+    font-size: 12px;
+    background: var(--surface);
+    color: var(--ink);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+    padding: 0 10px;
+    height: 30px;
+    cursor: pointer;
+}
+.whole-path-btn:hover { background: var(--accent-soft); }
+.whole-path-btn:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+@media (pointer: coarse) {
+    .whole-path-btn { min-height: 44px; }
+}
+
+/* Legend: three walker swatches + "not yet walked" */
+.map-legend {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+    padding: 8px 10px;
+    font-family: var(--font-body);
+    font-size: 12px;
+    color: var(--ink);
+    line-height: 1.6;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, .08);
+}
+.legend-row { display: flex; align-items: center; gap: 7px; white-space: nowrap; }
+.legend-swatch { width: 14px; height: 4px; border-radius: 2px; flex: 0 0 auto; display: inline-block; }
+.legend-swatch.charlie { background: var(--walker-charlie); }
+.legend-swatch.olly { background: var(--walker-olly); }
+.legend-swatch.dad { background: var(--walker-dad); }
+.legend-swatch.unwalked { background: var(--route-unwalked); }
+/* Overview mode: coverage-band tones (see updateRenderModeVisibility in js/map.js) */
+.legend-swatch.all { background: var(--walked-all); }
+.legend-swatch.some { background: var(--walked-some); }
+
+/* On narrow screens the legend sits in the top-right stack (see map.js) as a
+   compact horizontal strip rather than a tall bottom-left block. */
+@media (max-width: 860px) {
+    .map-legend {
+        display: flex;
+        flex-direction: row;
+        flex-wrap: nowrap;
+        gap: 4px 10px;
+        line-height: 1.4;
+        white-space: nowrap;
+    }
+
+    /* While the sheet is fully open it covers most of the screen, so the legend
+       and "Whole path" button in the top-right stack would otherwise float over
+       it; hide both until the sheet is dismissed again. #sidebar precedes #map
+       in the DOM (index.html), so the general sibling combinator reaches them. */
+    .sidebar.sheet-open ~ .map .map-legend,
+    .sidebar.sheet-open ~ .map .whole-path-control {
+        display: none;
+    }
+}

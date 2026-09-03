@@ -1,0 +1,155 @@
+/* ====== HEADER: intro, walker avatars, overall progress, coverage strip, pinned chip ====== */
+.sidebar-header { padding-top: 20px; } /* the sidebar's top inset lives here so sticky year headings meet the scrollport edge */
+.sidebar-header p { color: var(--muted); }
+
+/* ====== Walker avatars: three columns filling the sidebar width ====== */
+.walkers-avatars{
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  justify-items: center; align-items: flex-start;
+  gap: 8px; margin: 10px 0 14px;
+}
+.avatar-pie{
+  --size: 84px;
+  --thickness: 8px;
+  --pct: 0;                 /* set via style */
+  --color: var(--muted);    /* overridden per walker below */
+  width: var(--size); height: var(--size); border-radius: 999px; position: relative;
+  background: conic-gradient(var(--color) calc(var(--pct) * 1%), var(--rule) 0);
+}
+.avatar-pie.charlie{ --color: var(--walker-charlie); }
+.avatar-pie.olly{ --color: var(--walker-olly); }
+.avatar-pie.dad{ --color: var(--walker-dad); }
+
+.avatar-pie::after{        /* inner cut-out so the pie reads as a ring */
+  content: "";
+  position: absolute; inset: var(--thickness);
+  background: var(--surface); border-radius: 999px;
+}
+.avatar-pie img{
+  position: absolute;
+  z-index: 1;               /* paint above the ::after ring cut-out */
+  inset: calc(var(--thickness) + 4px);
+  width: calc(var(--size) - 2 * (var(--thickness) + 4px));
+  height: calc(var(--size) - 2 * (var(--thickness) + 4px));
+  object-fit: cover; border-radius: 999px;
+}
+.avatar-label{
+  display: flex; flex-direction: column; align-items: center;
+  margin-top: 8px; gap: 1px;
+}
+.avatar-name{
+  font-size: .85rem; font-weight: 600; color: var(--ink);
+}
+.avatar-pct{
+  font-size: .72rem; color: var(--muted); font-variant-numeric: tabular-nums;
+}
+.avatar-wrap{
+  display: flex; flex-direction: column; align-items: center;
+  cursor: pointer; outline: none;
+  min-width: 44px;
+  transition: transform .15s ease, opacity .15s ease;
+}
+/* Hover only lifts the avatar and previews the walker on the map
+   (via setHoverWalker); it never dims the other two. */
+.avatar-wrap:hover{ transform: translateY(-2px); }
+.avatar-wrap:focus-visible{
+  outline: 2px solid var(--accent); outline-offset: 3px; border-radius: var(--radius);
+}
+/* Pinning is the only thing that dims the other avatars. */
+.avatar-wrap.dimmed{ opacity: .55; }
+.avatar-wrap.selected .avatar-name{ font-weight: 800; }
+.avatar-wrap.selected .avatar-pie{ box-shadow: 0 0 0 3px var(--color); }
+
+/* ====== Overall progress: one statement, one bar ====== */
+.progress-line{
+  margin: 8px 0 6px;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ====== Route coverage bar: the path unrolled, one sectioned bar ======
+   Unpinned: "some of us" (union, mid tone) under "all three" (intersection,
+   accent) on top of unwalked grey. Pinned: just that walker's coverage in
+   their colour. See renderRouteBar() in js/header.js. */
+.coverage-strip{ margin: 14px 0 4px; }
+.route-bar{ margin: 0; }
+.route-track{
+  position: relative;
+  height: 10px;
+  background: var(--walked-none);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.route-seg{ position: absolute; top: 0; bottom: 0; }
+.route-seg.all{ background: var(--walked-all); }
+.route-seg.some{ background: var(--walked-some); }
+.route-seg.charlie{ background: var(--walker-charlie); }
+.route-seg.olly{ background: var(--walker-olly); }
+.route-seg.dad{ background: var(--walker-dad); }
+
+.coverage-ends{
+  display: flex; justify-content: space-between;
+  margin: 4px 0 0;
+  font-size: .68rem; color: var(--muted);
+}
+
+/* Small key under the bar: swatches + plain-voice labels */
+.coverage-key{
+  display: flex; flex-wrap: wrap;
+  gap: 4px 14px; margin: 6px 0 0;
+  font-size: .72rem; color: var(--muted);
+}
+.key-item{ display: inline-flex; align-items: center; gap: 5px; }
+.key-swatch{
+  width: 10px; height: 10px; border-radius: 2px; flex: none;
+  display: inline-block;
+}
+.key-swatch.all{ background: var(--walked-all); }
+.key-swatch.some{ background: var(--walked-some); }
+.key-swatch.none{ background: var(--walked-none); }
+.key-swatch.charlie{ background: var(--walker-charlie); }
+.key-swatch.olly{ background: var(--walker-olly); }
+.key-swatch.dad{ background: var(--walker-dad); }
+
+/* "Showing X's walks" chip when a walker is pinned */
+.active-filter{
+  align-items: center; gap: 8px; margin: 8px 0 2px; padding: 4px 6px 4px 12px;
+  border-radius: 999px; background: var(--accent-soft); color: var(--accent-ink);
+  font-size: .85rem; width: fit-content; max-width: 100%;
+}
+.active-filter:not([hidden]){ display: flex; }
+.active-filter span{ overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.active-filter .af-dot{
+  flex: none; width: 10px; height: 10px; border-radius: 999px; display: inline-block;
+}
+.active-filter .af-dot.charlie{ background: var(--walker-charlie); }
+.active-filter .af-dot.olly{ background: var(--walker-olly); }
+.active-filter .af-dot.dad{ background: var(--walker-dad); }
+.active-filter .af-clear{
+  flex: none; width: 32px; height: 32px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border: none; background: transparent; cursor: pointer;
+  font-size: 1rem; line-height: 1; color: var(--accent-ink);
+  border-radius: 999px;
+}
+.active-filter .af-clear:hover{ background: var(--surface); }
+.active-filter .af-clear:focus-visible{
+  outline: 2px solid var(--accent-ink); outline-offset: 2px;
+}
+
+/* ====== Phone: compact header so "half" sheet still leaves room for walk rows.
+   Self-contained here rather than relied on from css/mobile.css (owned by
+   another module and kept minimal), so the header works on its own on phones. */
+@media (max-width: 860px){
+  .avatar-pie{ --size: 56px; }
+  .walkers-avatars{ margin: 4px 0 4px; gap: 6px; }
+  .avatar-label{ margin-top: 2px; }
+  .avatar-name{ font-size: .78rem; }
+  .avatar-pct{ font-size: .68rem; }
+  .overall-stats{ margin: 0; }
+  .progress-line{ margin: 1px 0; font-size: .9rem; }
+  .coverage-strip{ margin: 4px 0 2px; }
+  .coverage-key{ font-size: .68rem; gap: 3px 10px; margin-top: 4px; }
+}

@@ -5,30 +5,45 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>SW Coast Path</title>
+  <meta name="description" content="Progress in our multi-year project to walk the South West Coast Path (~630 miles).">
+  <meta name="color-scheme" content="light">
+  <meta name="theme-color" content="#1d7c76">
+
+  <meta property="og:title" content="SW Coast Path">
+  <meta property="og:description" content="Progress in our multi-year project to walk the South West Coast Path (~630 miles).">
+  <meta property="og:type" content="website">
+  <meta property="og:image" content="https://projects.ollybritton.com/swcp/images/demo.png">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Source+Sans+3:wght@400;600&display=swap">
 
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <link rel="stylesheet" href="https://unpkg.com/tachyons@4.12.0/css/tachyons.min.css" />
   <!-- Bump ?v= on every deploy so browsers fetch fresh JS/CSS instead of stale cached copies -->
-  <link rel="stylesheet" href="styles.css?v=20260903-2" />
+  <link rel="stylesheet" href="css/base.css?v=20260903-5" />
+  <link rel="stylesheet" href="css/header.css?v=20260903-5" />
+  <link rel="stylesheet" href="css/list.css?v=20260903-5" />
+  <link rel="stylesheet" href="css/map.css?v=20260903-5" />
+  <link rel="stylesheet" href="css/mobile.css?v=20260903-5" />
 
   <link rel="shortcut icon" href="favicon.ico">
 </head>
 
-<body class="baskerville">
+<body>
   <div id="app" class="layout">
-    <!-- closed by default on mobile so it doesn’t cover too much -->
+    <!-- On narrow screens the sidebar becomes a bottom sheet (css/mobile.css, js/mobile.js) -->
     <aside id="sidebar" class="sidebar">
       <header class="sidebar-header">
-        <h1 class="fw1 ma0">🗺️ SW Coast Path</h1>
-        <p class="mt2 mb3 lh-copy">
+        <h1 class="wordmark">SW Coast Path</h1>
+        <p class="intro">
           Progress in our multi-year project to walk the <i>South West Coast Path</i> (~630 miles).
           <a href="https://www.youtube.com/@candovlogs" target="_blank" rel="noopener">YouTube channel</a>.
         </p>
 
-        <!-- Walkers: centered, larger, images + progress pies -->
+        <!-- Walker avatars with progress rings (rendered by js/header.js) -->
         <div id="walkers-avatars" class="walkers-avatars"></div>
 
-        <!-- compact KPIs -->
+        <!-- Progress line, bar and coverage strip (rendered by js/header.js) -->
         <div id="overall-stats" class="overall-stats"></div>
 
         <!-- shows when a single walker is pinned -->
@@ -40,29 +55,35 @@
         <div class="filters">
           <label class="filter-item">
             <input id="filter-videos" type="checkbox" />
-            <span class="ml1" id="video-toggle-label">Videos only</span>
+            <span id="video-toggle-label">Videos only</span>
           </label>
           <label class="filter-item sort-control">
-            <span class="mr1">Sort</span>
+            <span>Sort</span>
             <select id="sort-mode">
-              <option value="trip">By trip</option>
-              <option value="recent">Most recent</option>
+              <option value="trip">Oldest first</option>
+              <option value="recent">Latest first</option>
             </select>
           </label>
-          <span class="silver f6" id="sections-count"></span>
+          <span class="silver tiny" id="sections-count"></span>
         </div>
         <div id="sections-list" class="sections-list"></div>
       </section>
     </aside>
 
     <div id="map" class="map"></div>
-    <button id="open-sidebar" class="open-sidebar" aria-label="Toggle details">ⓘ</button>
 
     <script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script defer src="https://unpkg.com/@turf/turf@6/turf.min.js"></script>
-    <script defer src="leaflet-corridor.js?v=20260903-2"></script>
-    <script defer src="data.js?v=20260903-2"></script>
-    <script defer src="index.js?v=20260903-2"></script>
+    <script defer src="leaflet-corridor.js?v=20260903-5"></script>
+    <script defer src="data.js?v=20260903-5"></script>
+    <!-- App scripts are classic (non-module) and share top-level globals; order matters. -->
+    <script defer src="js/helpers.js?v=20260903-5"></script>
+    <script defer src="js/map.js?v=20260903-5"></script>
+    <script defer src="js/model.js?v=20260903-5"></script>
+    <script defer src="js/list.js?v=20260903-5"></script>
+    <script defer src="js/header.js?v=20260903-5"></script>
+    <script defer src="js/mobile.js?v=20260903-5"></script>
+    <script defer src="js/main.js?v=20260903-5"></script>
   </div>
 </body>
 </html>
